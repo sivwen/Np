@@ -1,26 +1,52 @@
-# Elona Luck for Elin 1.4.0
+# Elona Luck for Elin 1.5.0
 
-v1.4 추가:
-- 범죄/훔치기 발각 회피: PC의 범죄 목격 판정이 성공한 뒤 Luck에 따라 한 번 더 회피
-  - 기본: Luck/25%, 최대 60%
-- 자물쇠 따기 보조: 시도 중 유효 자물쇠 레벨을 Luck/20만큼 낮춤
-  - 최대 100 감소, 성공하지 못하면 원래 자물쇠 레벨로 복원
-- 낚시 품질 보정: 정상적으로 잡힌 물고기의 tier를 Luck 확률로 +1
-  - 기본: Luck/25%, 최대 50%, tier 3 상한
-- 해체 재료 회수 보정: 소수점 재료 회수 판정 확률을 Luck으로 증가
-  - 기본: Luck 50당 유효 확률 +1%, 최대 +100%
+## SkillAndLuckMatter 완전 대체 계층
+Steam Workshop SkillAndLuckMatter(3386957797)의 공개 설명에 나온 핵심 기능을 이 모드에 흡수했습니다.
 
-기존 v1.3 기능:
-- 일반 SpawnLoot 드롭률 Luck 보정
-- 훔치기 중량 제한 Luck 우회
-- 장비 품질 1단계 상승
-- 인챈트 개수 / 상위 후보 레벨 / 인챈트 수치 보정
-- Elin 전역 Luck 주사위 재굴림 비활성화
+원 모드 공식:
+(Activity Score) =
+(Skill × SkillModifier × SkillWeight + Luck × LuckModifier × LuckWeight)
+÷ (SkillWeight + LuckWeight)
 
-주의:
-- 퀘스트/스토리성 랜덤 이벤트는 진행 파손 위험 때문에 이번 버전에서는 직접 변경하지 않음.
-- 모든 신규 효과는 config에서 개별 On/Off 및 상한 조절 가능.
+기본값:
+- SkillWeight = 3
+- LuckWeight = 2
+- Skill/Luck modifier = 100%
+- 점수 10 → 15%, 40 → 50%, 100 → 75%, 200 → 100%, 300 → 200%
+- 200 이상에서는 확정 보너스 롤이 누적되고 나머지는 확률 롤
+- 제작/가공은 위 보너스 확률의 1/10로 재료를 환급
+
+적용 활동:
+- 채광 (Mining / skill 220)
+- 땅파기 (Digging / skill 230)
+- 수확·채집·베기 (Gathering/Farming/Lumberjack 계열)
+- 낚시 (Fishing / skill 245)
+- 제작/가공 (해당 레시피 요구 스킬)
+
+호환:
+- 원본 SkillAndLuckMatter 어셈블리가 감지되면 Activity Bonus Roll 계층은 기본 자동 비활성화됩니다.
+- 원본 모드를 제거하면 본 모드가 자동으로 대체 기능을 수행합니다.
+- AutoDisableWhenOriginalDetected=false로 두 모드를 강제로 중첩할 수도 있지만 권장하지 않습니다.
+
+## 기존 기능과의 차이/중복
+SkillAndLuckMatter는 개별 희귀품 확률을 바꾸지 않고 같은 활동의 추가 보상 롤을 제공합니다.
+Elona Luck for Elin의 기존 기능은 별도 계층이므로 각각 독립적으로 끌 수 있습니다.
+
+- SpawnLoot 일반 드롭 확률 Luck 보정: 별도
+- 장비 품질 Luck/5000: 별도
+- 인챈트 개수/등급/수치: 별도
+- 훔치기 중량 제한/발각 회피: 별도
+- 자물쇠 따기: 별도
+- 낚시 tier 상승: 별도
+- 해체 소수점 회수: 별도
+- SkillAndLuckMatter Activity Bonus Roll: v1.5 신규
+
+## 안전 처리
+- 원 모드에서 과거 문제가 있었던 grindstone 장비 복제 방식은 사용하지 않습니다.
+- 활동 드롭은 최종 산출물 수량 계층에서 보너스를 적용하며 장비 가공 결과를 직접 복제하지 않습니다.
+- 제작은 결과물 복제 대신 입력 재료의 복제본을 환급합니다.
+- 스토리/퀘스트 RNG는 건드리지 않습니다.
 
 설치: Elin/Package/ElonaLuckForElin/
 설정: BepInEx/config/sivwen.elin.elonaluck.cfg
-EA 23.338 Patch 2 기준.
+EA 23.338 Patch 2 기준 빌드.

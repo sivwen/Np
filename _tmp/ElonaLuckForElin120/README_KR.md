@@ -1,46 +1,59 @@
-# Elona Luck for Elin 2.0.0 Stable
+# Elona Luck for Elin 2.0.1 Stable
 
-v2.0은 v1.7까지 추가된 Luck 기능을 유지하면서 안정화한 버전입니다.
+v2.0의 SpawnLoot 전역 RNG 보정을 제거하고 몬스터 드롭을 계층별로 다시 설계한 안정화 패치입니다.
 
-주요 수정:
-- SkillAndLuckMatter 대체 계층의 채광/땅파기/벌목에서 스킬 ID를 값처럼 쓰던 버그 수정
-  - 이제 Evalue(220/230/225)의 실제 숙련도를 사용
-- SpawnLoot 일반 드롭 Luck 보정에서 전역 StackTrace 감시 제거
-  - Card.SpawnLoot 진입/탈출 컨텍스트로 제한
-- 해체 Luck 보정에서 전역 StackTrace 감시 제거
-  - TaskHarvest.HarvestThing 컨텍스트로 제한
-- 보물상자/둥지 Luck에 명시적 컨텍스트 추가
-  - 다른 EClass.rnd 호출에 번질 가능성 축소
-- 캐릭터 가챠 best-of 후보 교체 시 버려진 임시 캐릭터 객체 정리
-- 예외 발생 시에도 ThreadStatic 컨텍스트가 복구되도록 Finalizer 사용
-- 신규 설치 기본 인챈트 수치 보정 완화
-  - EnchantValueLuckDivisor 2000
-  - EnchantValueBonusCapPercent 50
+## 드롭 재설계
 
-기능:
-- Elona식 장비 품질 상승
-- 인챈트 개수 / 후보 레벨 / 수치 Luck
-- 일반 SpawnLoot 드롭 Luck
-- 훔치기 중량 제한 우회 / 범죄 목격 회피
-- 자물쇠 따기 Luck
-- 낚시 tier 및 SkillAndLuckMatter식 추가 보상
-- 해체 소수점 회수
-- SkillAndLuckMatter 대체: 채광/땅파기/채집/벌목/낚시/제작
-- 둥지 수정란 / 씨앗 회수 / 보물상자 희귀도 / 스크래치
-- 아이템/캐릭터 가챠 best-of
-- 카지노 순이익 보너스
+### 피규어 / 박제
+- Luck 미적용.
+- 기존 Elin 확률을 그대로 사용합니다.
 
-호환:
-- SkillAndLuckMatter가 함께 로드되면 대체 Activity Bonus Roll 계층은 기본 자동 비활성화
-- SkillAndLuckMatter 제거 시 본 모드가 해당 기능을 단독 대체
-- 각 기능은 config에서 개별 On/Off 가능
+### 시체
+- Elin 기존 해부학(290) 공식을 보존합니다.
+- Luck은 해부학을 대체하지 않고 보조합니다.
+- 기본 조합: Anatomy:Luck = 3:2
+- 혼합값이 실제 해부학보다 낮으면 기존 해부학 값을 유지하므로 Luck 때문에 시체 드롭이 약해지지 않습니다.
 
-주의:
-- 기존 v1.x config가 있으면 사용자가 설정한 값을 보존합니다.
-- v2.0의 완화된 기본 인챈트 수치를 적용하려면 기존 config에서
-  EnchantValueLuckDivisor=2000,
-  EnchantValueBonusCapPercent=50
-  로 직접 바꾸거나 해당 config를 새로 생성하면 됩니다.
+### 유전자
+- 기존 1/200 계열 판정이 실패했을 때만 추가 보정 롤.
+- Anatomy + Luck 3:2 혼합값으로 상대 확률을 올립니다.
+- 이미 유전자가 생성됐다면 추가 생성하지 않습니다.
+
+### 몬스터 고유 드롭 / 희귀 드롭 / 아티팩트
+- sourceCard.loot 및 race.loot를 별도 추적.
+- 기존 판정이 실패한 항목에만 Luck 기반 추가 롤을 수행합니다.
+- 기본: Luck 10당 상대 확률 +1%, 최대 +300%.
+- 토끼 꼬리처럼 몬스터 고유 loot 테이블에 들어간 희귀품도 이 계층의 대상입니다.
+- 100% 이상 고정 수량 드롭(num >= 1000)은 보정하지 않습니다.
+
+### 일반 부산물
+- fang / skin / offal / heart
+- memory_chip / microchip / battery / scrap / bolt
+- 일부 골렘 결정
+- 기존 판정 실패 시에만 Luck 기반 추가 롤.
+- 기본: Luck 50당 상대 확률 +1%, 최대 +100%.
+
+### 몬스터 소지품 / 장비
+Luck 단독이 아니라 처치 품질과 함께 계산합니다.
+
+기본 상대 보너스:
+- Luck: Luck/10, 최대 +100%
+- 크리티컬 처치: +50%
+- AttackSource.Finish: +100%
+- Executioner(1420): 레벨당 +25%, 최대 +100%
+- 오버킬: 대상 최대 HP 대비 초과 피해율, 최대 +100%
+- 전체 합산 상한: +300%
+
+기존 드롭에 성공한 아이템은 건드리지 않고, 원래 드롭되지 않은 소지품/장비에만 추가 보정 판정을 합니다.
+Artifact 이상은 기존 자동 드롭 로직을 존중하고 추가 롤에서 제외합니다.
+
+## 보스 레전더리 전리품 / 상자
+- TryDropBossLoot()의 보스 보물상자는 이 드롭 보정에서 제외합니다.
+- 보물상자 내부 장비 희귀도는 기존 v1.6+ Treasure Luck 계층에서만 처리합니다.
+- 따라서 보스 상자에 Luck이 이중 적용되지 않습니다.
+
+## 기존 기능
+v2.0의 SkillAndLuckMatter 대체, 장비 품질, 인챈트, 훔치기, 자물쇠, 낚시, 해체, 씨앗, 둥지, 보물상자, 스크래치, 가챠, 카지노 기능을 유지합니다.
 
 설치:
 Elin/Package/ElonaLuckForElin/
@@ -48,4 +61,4 @@ Elin/Package/ElonaLuckForElin/
 설정:
 BepInEx/config/sivwen.elin.elonaluck.cfg
 
-EA 23.338 Patch 2 기준 안정화 빌드.
+EA 23.338 Patch 2 기준 빌드.

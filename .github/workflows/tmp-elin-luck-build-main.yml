@@ -1,0 +1,25 @@
+name: tmp-elin-luck-build
+on:
+  push:
+    branches: ["tmp-elin-elona-luck-build-20260904"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: {dotnet-version: '8.0.x'}
+      - run: dotnet build _tmp/ElonaLuckForElin/ElonaLuckForElin.csproj -c Release
+      - run: |
+          mkdir -p _tmp/ElonaLuckForElin/build
+          base64 -w 0 _tmp/ElonaLuckForElin/bin/Release/netstandard2.0/ElonaLuckForElin.dll > _tmp/ElonaLuckForElin/build/ElonaLuckForElin.dll.b64
+          echo OK > _tmp/ElonaLuckForElin/build/BUILD_OK.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElonaLuckForElin-v1.0.0
+          path: |
+            _tmp/ElonaLuckForElin/build/ElonaLuckForElin.dll.b64
+            _tmp/ElonaLuckForElin/package.xml
+            _tmp/ElonaLuckForElin/README_KR.md

@@ -1,34 +1,28 @@
-# Elona Luck for Elin 1.6.0
+# Elona Luck for Elin 1.7.0
 
-v1.6 추가: 희귀 결과(Quality/Rare Outcome) Luck 계층
+v1.7 추가:
 
-- 새 둥지 수정란
-  - SurvivalManager의 bird nest 결과에서 기본 10% 수정란 판정 실패 시 Luck 기반 추가 재굴림
-  - 기본: Luck/50%, 최대 추가 40%
+## Gacha Luck - best-of
+- 캐릭터 가챠
+  - 기존 Draw 결과 + Luck 기반 추가 후보를 생성
+  - quality → LV → 원본 chance(낮을수록 희귀) 순으로 더 좋은 후보 선택
+  - 기본: Luck 500당 추가 후보 1개, 최대 +5
+- 아이템 가챠
+  - TraitGachaBall에서 SpawnList.Select() 호출 시에만 추가 후보 생성
+  - item value와 LV가 높은 후보를 우선
+  - 일반 SpawnList 사용에는 영향 없음
+- 후보를 여러 번 평가하되 원래 가챠 호출 범위에서만 동작
 
-- 씨앗 회수
-  - GrowSystem.TryPopSeed의 첫 seed recovery RNG 강도를 Luck으로 보정
-  - 기본: Luck 50당 약 +1% 유효 판정 강도, 최대 +200%
-  - 자동농장은 기존 고정 처리 유지
+## Casino Luck
+- MiniGame 종료 정산 시 순이익(changeCoin)이 양수일 때만 Luck 보너스 판정
+- 기본: Luck/25%, 최대 50% 확률
+- 성공 시 해당 세션 순이익의 +50%를 추가 지급
+- 손실 세션에는 보정 없음
+- Blackjack/Basket 및 MiniGame 공통 정산을 사용하는 플러그인형 미니게임에도 적용 가능
+- 게임 내부 카드/슬롯 RNG를 직접 변조하지 않음
 
-- 보물상자 장비 희귀도
-  - ThingGen.CreateTreasureContent 내부 로컬 SetRarity에만 Luck 적용
-  - Legendary 계열 0~99 rarity roll을 Luck/50만큼 낮춤, 최대 -50
-  - Mythical 1/20 판정은 Luck 500마다 분모 -1, 최소 1/5
-  - 상자의 화폐, 잡동사니, 스토리/퀘스트 보상 RNG는 변경하지 않음
-
-- 스크래치
-  - TraitCrafter Scratch의 Prize() 판정에만 Luck 적용
-  - 보상 판정 순서(메달→플래티넘→가구→플라모→음식→카지노 코인)는 유지
-  - Luck 50당 유효 당첨 확률 +1%, 최대 +150%
-
-- 가챠/카지노
-  - 이번 버전에서는 직접 변경하지 않음.
-  - 가챠는 UID/date 기반 seeded RNG와 SpawnList/재질 선택이 묶여 있어 결과 비교 후 best-of 방식이 더 안전함.
-  - TraitGamble은 PC 핵심 카지노 보상 판정이 아니므로 억지로 조정하지 않음.
-
-SkillAndLuckMatter 대체 계층(v1.5)과 기존 기능은 모두 유지됩니다.
-수량 보너스(Activity Bonus Roll)와 희귀 결과 Luck은 서로 독립 설정입니다.
+기존 v1.6 희귀 결과 Luck과 SkillAndLuckMatter 대체 계층 포함.
+모든 기능은 config에서 개별 On/Off 및 수치 조절 가능.
 
 설치: Elin/Package/ElonaLuckForElin/
 설정: BepInEx/config/sivwen.elin.elonaluck.cfg

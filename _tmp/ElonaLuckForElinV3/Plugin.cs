@@ -225,31 +225,32 @@ static class LuckRoll{
 static class SeedLuckPatch{
  static void Postfix(GrowSystem __instance,Chara c,ref Thing __result){
    if(!Plugin.SeedLuck.Value||__result!=null||EClass.pc==null||c!=EClass.pc)return;
-   // 원본의 토양/시듦/source.chance 조건을 재구현하지 않는다. 안전상 실패 후 낮은 독립 보너스만 허용.
-   int p=LuckRoll.Pct(Plugin.SeedDiv,Plugin.SeedCap);
-   if(p<=0||EClass.rnd(100)>=p)return;
-   try{
-     var fi=typeof(GrowSystem).GetField("cell",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
-     var cell=fi?.GetValue(__instance);
-     if(cell==null)return;
-     var make=AccessTools.Method(typeof(TraitSeed),"MakeSeed",new[]{cell.GetType()});
-     var pick=AccessTools.Method(typeof(GrowSystem),"TryPick",new[]{cell.GetType(),typeof(Thing),typeof(Chara),typeof(bool)});
-     if(make==null||pick==null)return;
-     var seed=make.Invoke(null,new[]{cell}) as Thing;if(seed==null)return;
-     pick.Invoke(__instance,new object[]{cell,seed,c,false});__result=seed;
-   }catch(Exception e){Plugin.I.Logger.LogWarning("v3.3 씨앗 Luck 보너스 건너뜀: "+e.GetType().Name);}
+   int p=LuckRoll.Pct(Plugin.SeedDiv,Plugin.SeedCap);if(p<=0||EClass.rnd(100)>=p)return;
+   try{Thing seed=TraitSeed.MakeSeed(GrowSystem.cell);if(seed==null)return;__instance.TryPick(GrowSystem.cell,seed,c);__result=seed;}
+   catch(Exception e){Plugin.I.Logger.LogWarning("v3.3 씨앗 Luck 보너스 건너뜀: "+e.GetType().Name);}
  }
 }
 [HarmonyPatch(typeof(Card),nameof(Card.MakeEgg),new Type[]{typeof(bool),typeof(int),typeof(bool),typeof(int),typeof(BlessedState?)})]
 static class FertEggLuckPatch{
- static void Postfix(Card __instance,int fertChance,ref Thing __result){
-   if(!Plugin.FertEggLuck.Value||__result==null||fertChance<=1||EClass.pc==null)return;
-   if(__result.id=="egg_fertilized")return;
-   if(!LuckRoll.ExtraOneIn(fertChance,Plugin.EggDiv,Plugin.EggCap))return;
-   // 결과 Thing을 통째로 교체하면 GiveBirth/참조/상태 부작용이 생기므로 ID만 바꾸지 않는다.
-   // 실제 Elin API에서 안전한 변환 메서드가 확인될 때까지 fail-closed.
-   Plugin.I.Logger.LogInfo("수정란 Luck 추가 판정 성공(안전 변환 API 미확인으로 결과 변경 생략)");
+ static void Prefix(Card __instance,ref int fertChance){
+   if(!Plugin.FertEggLuck.Value||fertChance<=1||EClass.pc==null)return;
+   if(LuckRoll.ExtraOneIn(fertChance,Plugin.EggDiv,Plugin.EggCap))fertChance=1;
  }
+}
+[HarmonyPatch(typeof(TraitCrafter),nameof(TraitCrafter.Craft),new Type[]{typeof(AI_UseCrafter)})]
+static class ScratchLuckPatch{
+ static void Postfix(TraitCrafter __instance,AI_UseCrafter ai,ref Thing __result){
+   if(!Plugin.ScratchLuck.Value||__result!=null||ai==null||EClass.pc==null)return;
+   SourceRecipe.Row src=__instance.GetSource(ai);if(src==null||src.type.ToString()!="Scratch")return;
+   int p=LuckRoll.Pct(Plugin.ScratchDiv,Plugin.ScratchCap);if(p<=0)return;
+   if(Roll(20,p)){__result=ThingGen.Create("medal",-1,EClass.pc.LV);return;}
+   if(Roll(10,p)){__result=ThingGen.Create("plat",-1,EClass.pc.LV);return;}
+   if(Roll(10,p)){__result=ThingGen.CreateFromCategory("furniture",EClass.pc.LV);return;}
+   if(Roll(4,p)){__result=ThingGen.Create("plamo_box",-1,EClass.pc.LV);return;}
+   if(Roll(4,p)){__result=ThingGen.Create("food",-1,EClass.pc.LV);return;}
+   if(Roll(1,p)){__result=ThingGen.Create("casino_coin",-1,EClass.pc.LV);}
+ }
+ static bool Roll(int denom,int p){if(denom<=1)return EClass.rnd(100)<p;return EClass.rnd(100*denom)<p;}
 }
 [HarmonyPatch(typeof(ThingGen),nameof(ThingGen.CreateTreasureContent),new Type[]{typeof(Thing),typeof(int),typeof(TreasureType),typeof(bool)})]
 static class TreasureLuckPatch{
@@ -257,7 +258,7 @@ static class TreasureLuckPatch{
    if(!Plugin.TreasureLuck.Value||t==null||EClass.pc==null)return;
    int p=LuckRoll.Pct(Plugin.TreasureDiv,Plugin.TreasureCap);if(p<=0)return;
    foreach(var x in t.things){
-     if(x==null||EClass.rnd(100)>=p)continue;
+     if(x==null||!x.IsEquipment||EClass.rnd(100)>=p)continue;
      if(x.rarity==Rarity.Superior)x.rarity=Rarity.Legendary;
      else if(x.rarity==Rarity.Legendary)x.rarity=Rarity.Mythical;
    }

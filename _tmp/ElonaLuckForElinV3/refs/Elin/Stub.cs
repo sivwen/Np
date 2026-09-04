@@ -34,6 +34,7 @@ public class Point{
 }
 public class Map{public void TrySmoothPick(Point p,Thing t,Chara c){}}
 public class AI_Fish{public static Thing Makefish(Chara c)=>null;}
+public class AI_Steal{}
 public class RecipeSource{public Element GetReqSkill()=>new Element();}
 public class Element{public int id;}
 public class Recipe{
@@ -54,8 +55,11 @@ public class AttackProcess{
  public Card TC;
  public bool crit;
 }
+public class GameDate{public int GetRaw()=>0;}
+public class World{public GameDate date=new GameDate();}
 public static class EClass{
  public static Chara pc=new Chara();
+ public static World world=new World();
  public static int rnd(int a)=>0;
  public static float rndf(float a)=>0f;
 }

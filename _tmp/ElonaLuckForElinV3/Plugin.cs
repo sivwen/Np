@@ -1,10 +1,10 @@
-using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;
+using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;using System.Reflection;using System.Reflection.Emit;
 namespace ElonaLuckForElinV3{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin v3 Core",V="3.0.0";
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin v3.1",V="3.1.0";
 internal static Plugin I=null!;Harmony? h;
-internal static ConfigEntry<bool> Witness=null!,Lock=null!,Fish=null!,Activity=null!,Mine=null!,Dig=null!,Harvest=null!,FishBonus=null!,Craft=null!,Casino=null!;
-internal static ConfigEntry<int> WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,SkillW=null!,LuckW=null!,CasinoDiv=null!,CasinoCap=null!;
+internal static ConfigEntry<bool> Witness=null!,Lock=null!,Fish=null!,Activity=null!,Mine=null!,Dig=null!,Harvest=null!,FishBonus=null!,Craft=null!,Casino=null!,DropPatch=null!,Corpse=null!,Gene=null!,Materials=null!,UniqueLoot=null!,CombatLoot=null!;
+internal static ConfigEntry<int> WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,SkillW=null!,LuckW=null!,CasinoDiv=null!,CasinoCap=null!,AnatomyW=null!,AnatomyLuckW=null!,GeneDiv=null!,GeneCap=null!,MaterialDiv=null!,MaterialCap=null!,UniqueDiv=null!,UniqueCap=null!,CombatLuckDiv=null!,CombatLuckCap=null!,CritBonus=null!,ExecutionerBonus=null!,OverkillCap=null!,CombatTotalCap=null!;
 void Awake(){I=this;
 Witness=Config.Bind("범죄/발각 운","범죄 목격 회피 운",true,"범죄 목격 판정이 성공했을 때 운에 따라 추가 회피 판정을 합니다.");
 WitnessDiv=Config.Bind("범죄/발각 운","목격 회피 운 분모",25,"기본 회피 확률은 운/이 값(%)입니다.");
@@ -26,7 +26,27 @@ LuckW=Config.Bind("SkillAndLuckMatter 대체","운 가중치",2,"활동 점수�
 Casino=Config.Bind("카지노 운","카지노 배당 운",true,"순이익이 양수일 때 운에 따라 추가 배당을 지급합니다.");
 CasinoDiv=Config.Bind("카지노 운","카지노 보너스 운 분모",25,"추가 배당 확률은 운/이 값(%)입니다.");
 CasinoCap=Config.Bind("카지노 운","카지노 보너스 확률 상한",50,"추가 배당 확률 상한입니다.");
-h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded. 사망/드롭/전역 RNG 패치 없음.");}
+DropPatch=Config.Bind("드롭 운","v3.1 드롭 패치 사용",true,"SpawnLoot의 개별 판정식만 좁게 수정합니다. 패턴이 맞지 않으면 전체 드롭 패치를 자동 건너뜁니다.");
+Corpse=Config.Bind("드롭 운","시체 해부학+운",true,"SpawnLoot 내부 해부학 판정에서만 운을 보조값으로 사용합니다.");
+Gene=Config.Bind("드롭 운","유전자 해부학+운",true,"원래 유전자 chance(200) 판정의 분모만 해부학+운으로 완화합니다.");
+Materials=Config.Bind("드롭 운","일반 소재 드롭 운",true,"송곳니/가죽/내장/심장/기계부품/골렘 결정의 기존 chance() 분모만 완화합니다.");
+UniqueLoot=Config.Bind("드롭 운","몬스터 고유 드롭 운",true,"sourceCard/race 고유 loot의 원래 rnd(1000) 판정만 운으로 보정합니다.");
+CombatLoot=Config.Bind("드롭 운","전투 마무리 장비/소지품 드롭",true,"몬스터 장비/소지품의 기존 판정에 운·크리티컬·처형자·오버킬을 반영합니다.");
+AnatomyW=Config.Bind("드롭 운","해부학 가중치",3,"시체/유전자 혼합값에서 해부학의 가중치입니다.");
+AnatomyLuckW=Config.Bind("드롭 운","운 가중치",2,"시체/유전자 혼합값에서 운의 가중치입니다.");
+GeneDiv=Config.Bind("드롭 운","유전자 보너스 강도 분모",2,"해부학+운 혼합값을 이 값으로 나눈 %만큼 유전자 드롭 확률을 상대적으로 높입니다.");
+GeneCap=Config.Bind("드롭 운","유전자 상대 보너스 상한",200,"유전자 드롭 상대 확률 증가 상한입니다.");
+MaterialDiv=Config.Bind("드롭 운","일반 소재 운 분모",50,"운이 이 값만큼 오를 때 일반 소재 상대 드롭률이 1% 증가합니다.");
+MaterialCap=Config.Bind("드롭 운","일반 소재 보너스 상한",100,"일반 소재 상대 드롭률 증가 상한입니다.");
+UniqueDiv=Config.Bind("드롭 운","고유 드롭 운 분모",10,"운이 이 값만큼 오를 때 몬스터 고유 드롭의 상대 확률이 1% 증가합니다.");
+UniqueCap=Config.Bind("드롭 운","고유 드롭 보너스 상한",300,"몬스터 고유 드롭 상대 확률 증가 상한입니다.");
+CombatLuckDiv=Config.Bind("드롭 운","전투 드롭 운 분모",10,"운이 이 값만큼 오를 때 장비/소지품 상대 드롭률이 1% 증가합니다.");
+CombatLuckCap=Config.Bind("드롭 운","전투 드롭 운 기여 상한",100,"전투 드롭에서 운이 기여하는 상대 보너스 상한입니다.");
+CritBonus=Config.Bind("드롭 운","크리티컬 처치 보너스",50,"마지막 공격이 실제 크리티컬이면 더하는 상대 드롭 보너스입니다.");
+ExecutionerBonus=Config.Bind("드롭 운","처형자 레벨당 보너스",25,"처형자 특성(1420) 1레벨당 더하는 상대 드롭 보너스입니다.");
+OverkillCap=Config.Bind("드롭 운","오버킬 보너스 상한",100,"대상 최대 HP 대비 음수 HP 비율에서 얻는 보너스 상한입니다.");
+CombatTotalCap=Config.Bind("드롭 운","전투 드롭 총 보너스 상한",300,"운·크리티컬·처형자·오버킬 합산 상대 보너스 상한입니다.");
+h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded. Card.Die/전역 RNG 패치 없음. SpawnLoot 개별 판정 transpiler만 사용.");}
 void OnDestroy(){h?.UnpatchSelf();}
 internal static int Luck(){int l=EClass.pc==null?1:EClass.pc.Evalue(78);return Math.Max(1,Math.Min(9999,l));}
 internal static double Score(int skill){int sw=Math.Max(0,SkillW.Value),lw=Math.Max(0,LuckW.Value),d=sw+lw;if(d<=0)return 0;return (Math.Max(0,skill)*sw+Luck()*lw)/(double)d;}
@@ -47,4 +67,79 @@ static class CraftCore{internal static List<Thing>? Prep(Recipe r,List<Thing> in
 [HarmonyPatch(typeof(Recipe),nameof(Recipe.Craft),new Type[]{typeof(BlessedState),typeof(bool),typeof(List<Thing>),typeof(TraitCrafter),typeof(bool)})]static class RecipePatch{static void Prefix(Recipe __instance,List<Thing> ings,bool model,out List<Thing>? __state){__state=CraftCore.Prep(__instance,ings,model);}static void Postfix(List<Thing>? __state,Thing __result){if(__result!=null)CraftCore.Give(__state);}}
 [HarmonyPatch(typeof(RecipeCard),nameof(RecipeCard.Craft),new Type[]{typeof(BlessedState),typeof(bool),typeof(List<Thing>),typeof(TraitCrafter),typeof(bool)})]static class RecipeCardPatch{static void Prefix(RecipeCard __instance,List<Thing> ings,bool model,out List<Thing>? __state){__state=CraftCore.Prep(__instance,ings,model);}static void Postfix(List<Thing>? __state,Thing __result){if(__result!=null)CraftCore.Give(__state);}}
 [HarmonyPatch(typeof(MiniGame),nameof(MiniGame.Deactivate),new Type[]{})]static class CasinoPatch{static void Prefix(MiniGame __instance){if(!Plugin.Casino.Value||__instance?.balance==null||__instance.balance.changeCoin<=0)return;int a=Math.Min(Plugin.CasinoCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.CasinoDiv.Value)));if(EClass.rnd(100)<a)__instance.balance.changeCoin+=Math.Max(1,__instance.balance.changeCoin/2);}}
+static class DropMath{
+internal static int Anatomy(Card actor,int id){
+ int original=actor==null?0:actor.Evalue(id);if(!Plugin.DropPatch.Value||!Plugin.Corpse.Value||id!=290)return original;
+ int sw=Math.Max(0,Plugin.AnatomyW.Value),lw=Math.Max(0,Plugin.AnatomyLuckW.Value),d=sw+lw;if(d<=0)return original;
+ int mixed=(Math.Max(0,original)*sw+Plugin.Luck()*lw)/d;return Math.Max(original,mixed);
+}
+internal static int AdjustChance(int denominator,Card victim,Card origin,int kind){
+ if(!Plugin.DropPatch.Value||denominator<=1)return denominator;int bonus=0;
+ if(kind==1&&Plugin.Gene.Value){
+   int anatomy=origin==null?0:Anatomy(origin,290);
+   bonus=Math.Min(Math.Max(0,Plugin.GeneCap.Value),Math.Max(0,anatomy/Math.Max(1,Plugin.GeneDiv.Value)));
+ }else if(kind==2&&Plugin.Materials.Value){
+   bonus=Math.Min(Math.Max(0,Plugin.MaterialCap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.MaterialDiv.Value)));
+ }else return denominator;
+ return ReduceDenom(denominator,bonus);
+}
+internal static int UniqueRnd(int max){
+ if(!Plugin.DropPatch.Value||!Plugin.UniqueLoot.Value||max<=1)return EClass.rnd(max);
+ int bonus=Math.Min(Math.Max(0,Plugin.UniqueCap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.UniqueDiv.Value)));
+ return EClass.rnd(ReduceDenom(max,bonus));
+}
+internal static int CombatBonus(Card victim,Card origin){
+ if(!Plugin.DropPatch.Value||!Plugin.CombatLoot.Value||origin==null)return 0;
+ int b=Math.Min(Math.Max(0,Plugin.CombatLuckCap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.CombatLuckDiv.Value)));
+ var ap=AttackProcess.Current;
+ if(ap!=null&&ap.CC==origin&&ap.TC==victim&&ap.crit)b+=Math.Max(0,Plugin.CritBonus.Value);
+ b+=Math.Min(100,Math.Max(0,origin.Evalue(1420)*Math.Max(0,Plugin.ExecutionerBonus.Value)));
+ if(victim!=null){int mh=Math.Max(1,victim.MaxHP);int ov=Math.Max(0,-victim.hp*100/mh);b+=Math.Min(Math.Max(0,Plugin.OverkillCap.Value),ov);}
+ return Math.Min(Math.Max(0,Plugin.CombatTotalCap.Value),b);
+}
+internal static int AdjustCombatDenom(int denominator,Card victim,Card origin){return ReduceDenom(denominator,CombatBonus(victim,origin));}
+internal static float CombatRndf(float max,Card victim,Card origin){
+ if(max<=0)return EClass.rndf(max);int b=CombatBonus(victim,origin);if(b<=0)return EClass.rndf(max);
+ float scale=1f+b/100f;return EClass.rndf(max)/scale;
+}
+internal static int ReduceDenom(int d,int bonus){if(d<=1||bonus<=0)return d;long n=(long)d*100L;int r=(int)((n+99+bonus)/(100+bonus));return Math.Max(1,r);}
+}
+
+[HarmonyPatch(typeof(Card),nameof(Card.SpawnLoot),new Type[]{typeof(Card)})]static class SpawnLootNarrowPatch{
+static readonly MethodInfo MAnatomy=typeof(DropMath).GetMethod(nameof(DropMath.Anatomy),BindingFlags.Static|BindingFlags.NonPublic|BindingFlags.Public)!;
+static readonly MethodInfo MAdjustChance=typeof(DropMath).GetMethod(nameof(DropMath.AdjustChance),BindingFlags.Static|BindingFlags.NonPublic|BindingFlags.Public)!;
+static readonly MethodInfo MUniqueRnd=typeof(DropMath).GetMethod(nameof(DropMath.UniqueRnd),BindingFlags.Static|BindingFlags.NonPublic|BindingFlags.Public)!;
+static readonly MethodInfo MCombatDenom=typeof(DropMath).GetMethod(nameof(DropMath.AdjustCombatDenom),BindingFlags.Static|BindingFlags.NonPublic|BindingFlags.Public)!;
+static readonly MethodInfo MCombatRndf=typeof(DropMath).GetMethod(nameof(DropMath.CombatRndf),BindingFlags.Static|BindingFlags.NonPublic|BindingFlags.Public)!;
+
+static bool IsCall(CodeInstruction c,string name){return c.operand is MethodInfo m&&m.Name==name&&(c.opcode==OpCodes.Call||c.opcode==OpCodes.Callvirt);}
+static bool IsChance(CodeInstruction c){return c.operand is MethodInfo m&&m.Name.Contains("g__chance")&&(c.opcode==OpCodes.Call||c.opcode==OpCodes.Callvirt);}
+static bool Ldc(CodeInstruction c,int v){
+ if(c.opcode==OpCodes.Ldc_I4)return c.operand is int x&&x==v;
+ if(v==-1)return c.opcode==OpCodes.Ldc_I4_M1;if(v>=0&&v<=8)return c.opcode==new[]{OpCodes.Ldc_I4_0,OpCodes.Ldc_I4_1,OpCodes.Ldc_I4_2,OpCodes.Ldc_I4_3,OpCodes.Ldc_I4_4,OpCodes.Ldc_I4_5,OpCodes.Ldc_I4_6,OpCodes.Ldc_I4_7,OpCodes.Ldc_I4_8}[v];
+ if(c.opcode==OpCodes.Ldc_I4_S)return Convert.ToInt32(c.operand)==v;return false;
+}
+static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions){
+ var src=new List<CodeInstruction>(instructions);var chance=new List<int>();var anatomy=new List<int>();
+ for(int i=0;i<src.Count;i++){if(IsChance(src[i]))chance.Add(i);if(i>0&&IsCall(src[i],"Evalue")&&Ldc(src[i-1],290))anatomy.Add(i);}
+ if(chance.Count<14||anatomy.Count<2){Plugin.I.Logger.LogWarning($"v3.1 SpawnLoot 패턴 불일치: chance={chance.Count}, anatomy={anatomy.Count}. 드롭 패치를 적용하지 않습니다.");return src;}
+ int unique=-1;for(int i=chance[2]+1;i<chance[3];i++){if(i>0&&IsCall(src[i],"rnd")&&Ldc(src[i-1],1000)){unique=i;break;}}
+ int rndf=-1;for(int i=chance[13]+1;i<src.Count;i++){if(IsCall(src[i],"rndf")){rndf=i;break;}}
+ int eq100=-1,item5=-1;if(rndf>=0){for(int i=rndf+1;i<src.Count;i++){if(eq100<0&&i>0&&IsCall(src[i],"rnd")&&Ldc(src[i-1],100)){eq100=i;continue;}if(eq100>=0&&i>0&&IsCall(src[i],"rnd")&&Ldc(src[i-1],5)){item5=i;break;}}}
+ if(unique<0||rndf<0||eq100<0||item5<0){Plugin.I.Logger.LogWarning($"v3.1 SpawnLoot 세부 패턴 불일치: unique={unique}, rndf={rndf}, eq100={eq100}, item5={item5}. 드롭 패치를 적용하지 않습니다.");return src;}
+ var anatomySet=new HashSet<int>(anatomy);var chanceKind=new Dictionary<int,int>{{chance[2],1}};
+ for(int n=3;n<=9;n++)chanceKind[chance[n]]=2;for(int n=11;n<=13;n++)chanceKind[chance[n]]=2;
+ for(int i=0;i<src.Count;i++){
+   var ci=src[i];
+   if(anatomySet.Contains(i)){yield return new CodeInstruction(OpCodes.Call,MAnatomy);continue;}
+   if(chanceKind.TryGetValue(i,out int kind)){yield return new CodeInstruction(OpCodes.Ldarg_0);yield return new CodeInstruction(OpCodes.Ldarg_1);yield return new CodeInstruction(OpCodes.Ldc_I4,kind);yield return new CodeInstruction(OpCodes.Call,MAdjustChance);yield return ci;continue;}
+   if(i==unique){yield return new CodeInstruction(OpCodes.Call,MUniqueRnd);continue;}
+   if(i==rndf){yield return new CodeInstruction(OpCodes.Ldarg_0);yield return new CodeInstruction(OpCodes.Ldarg_1);yield return new CodeInstruction(OpCodes.Call,MCombatRndf);continue;}
+   if(i==eq100||i==item5){yield return new CodeInstruction(OpCodes.Ldarg_0);yield return new CodeInstruction(OpCodes.Ldarg_1);yield return new CodeInstruction(OpCodes.Call,MCombatDenom);yield return ci;continue;}
+   yield return ci;
+ }
+ Plugin.I.Logger.LogInfo($"v3.1 SpawnLoot 좁은 패치 적용: chance={chance.Count}, anatomy={anatomy.Count}.");
+}
+}
+
 }

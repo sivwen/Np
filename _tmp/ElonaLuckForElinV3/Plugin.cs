@@ -1,10 +1,10 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;using System.Reflection;using System.Reflection.Emit;
 namespace ElonaLuckForElinV3{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin v3.1",V="3.1.0";
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin v3.2",V="3.2.0";
 internal static Plugin I=null!;Harmony? h;
-internal static ConfigEntry<bool> Witness=null!,Lock=null!,Fish=null!,Activity=null!,Mine=null!,Dig=null!,Harvest=null!,FishBonus=null!,Craft=null!,Casino=null!,DropPatch=null!,Corpse=null!,Gene=null!,Materials=null!,UniqueLoot=null!,CombatLoot=null!;
-internal static ConfigEntry<int> WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,SkillW=null!,LuckW=null!,CasinoDiv=null!,CasinoCap=null!,AnatomyW=null!,AnatomyLuckW=null!,GeneDiv=null!,GeneCap=null!,MaterialDiv=null!,MaterialCap=null!,UniqueDiv=null!,UniqueCap=null!,CombatLuckDiv=null!,CombatLuckCap=null!,CritBonus=null!,ExecutionerBonus=null!,OverkillCap=null!,CombatTotalCap=null!;
+internal static ConfigEntry<bool> Witness=null!,Lock=null!,Fish=null!,Activity=null!,Mine=null!,Dig=null!,Harvest=null!,FishBonus=null!,Craft=null!,Casino=null!,DropPatch=null!,Corpse=null!,Gene=null!,Materials=null!,UniqueLoot=null!,CombatLoot=null!,StealWeight=null!;
+internal static ConfigEntry<int> WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,SkillW=null!,LuckW=null!,CasinoDiv=null!,CasinoCap=null!,AnatomyW=null!,AnatomyLuckW=null!,GeneDiv=null!,GeneCap=null!,MaterialDiv=null!,MaterialCap=null!,UniqueDiv=null!,UniqueCap=null!,CombatLuckDiv=null!,CombatLuckCap=null!,CritBonus=null!,ExecutionerBonus=null!,OverkillCap=null!,CombatTotalCap=null!,StealWeightDiv=null!,StealWeightCap=null!;
 void Awake(){I=this;
 Witness=Config.Bind("범죄/발각 운","범죄 목격 회피 운",true,"범죄 목격 판정이 성공했을 때 운에 따라 추가 회피 판정을 합니다.");
 WitnessDiv=Config.Bind("범죄/발각 운","목격 회피 운 분모",25,"기본 회피 확률은 운/이 값(%)입니다.");
@@ -46,7 +46,10 @@ CritBonus=Config.Bind("드롭 운","크리티컬 처치 보너스",50,"마지막
 ExecutionerBonus=Config.Bind("드롭 운","처형자 레벨당 보너스",25,"처형자 특성(1420) 1레벨당 더하는 상대 드롭 보너스입니다.");
 OverkillCap=Config.Bind("드롭 운","오버킬 보너스 상한",100,"대상 최대 HP 대비 음수 HP 비율에서 얻는 보너스 상한입니다.");
 CombatTotalCap=Config.Bind("드롭 운","전투 드롭 총 보너스 상한",300,"운·크리티컬·처형자·오버킬 합산 상대 보너스 상한입니다.");
-h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded. Card.Die/전역 RNG 패치 없음. SpawnLoot 개별 판정 transpiler만 사용.");}
+StealWeight=Config.Bind("훔치기 운","중량 제한 운 우회",true,"AI_Steal 내부의 tooHeavy 판정에서만 운으로 중량 제한을 확률적으로 우회합니다.");
+StealWeightDiv=Config.Bind("훔치기 운","중량 우회 운 분모",20,"기본 우회 확률은 운/이 값(%)이며 초과 중량 비율만큼 감소합니다.");
+StealWeightCap=Config.Bind("훔치기 운","중량 우회 확률 상한",75,"초과 중량 보정 전 기본 우회 확률 상한입니다.");
+h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded. Card.Die/전역 RNG 패치 없음. SpawnLoot 및 AI_Steal 개별 판정만 좁게 패치.");}
 void OnDestroy(){h?.UnpatchSelf();}
 internal static int Luck(){int l=EClass.pc==null?1:EClass.pc.Evalue(78);return Math.Max(1,Math.Min(9999,l));}
 internal static double Score(int skill){int sw=Math.Max(0,SkillW.Value),lw=Math.Max(0,LuckW.Value),d=sw+lw;if(d<=0)return 0;return (Math.Max(0,skill)*sw+Luck()*lw)/(double)d;}
@@ -139,6 +142,62 @@ static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> inst
    yield return ci;
  }
  Plugin.I.Logger.LogInfo($"v3.1 SpawnLoot 좁은 패치 적용: chance={chance.Count}, anatomy={anatomy.Count}.");
+}
+}
+
+[HarmonyPatch]
+static class StealWeightNarrowPatch{
+static readonly MethodInfo Getter=typeof(Card).GetProperty("ChildrenAndSelfWeight",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic)?.GetGetMethod(true)!;
+static readonly MethodInfo Helper=typeof(StealWeightNarrowPatch).GetMethod(nameof(EffectiveWeight),BindingFlags.Static|BindingFlags.NonPublic)!;
+
+static IEnumerable<MethodBase> TargetMethods(){
+ int found=0;
+ foreach(var t in Nested(typeof(AI_Steal))){
+   foreach(var m in t.GetMethods(BindingFlags.Instance|BindingFlags.Static|BindingFlags.Public|BindingFlags.NonPublic)){
+     if(m.IsAbstract||m.ContainsGenericParameters)continue;
+     if(CallsGetter(m)){found++;yield return m;}
+   }
+ }
+ if(found==0&&Plugin.I!=null)Plugin.I.Logger.LogWarning("v3.2: AI_Steal tooHeavy 내부 메서드를 찾지 못해 중량 우회 기능을 건너뜁니다.");
+}
+static IEnumerable<Type> Nested(Type root){
+ foreach(var t in root.GetNestedTypes(BindingFlags.Public|BindingFlags.NonPublic)){
+   yield return t;foreach(var c in Nested(t))yield return c;
+ }
+}
+static bool CallsGetter(MethodBase m){
+ if(Getter==null)return false;
+ try{
+   var il=m.GetMethodBody()?.GetILAsByteArray();if(il==null)return false;int token=Getter.MetadataToken;
+   for(int i=0;i+4<il.Length;i++){
+     byte op=il[i];if(op!=0x28&&op!=0x6f)continue;
+     if(BitConverter.ToInt32(il,i+1)==token)return true;
+   }
+ }catch{}
+ return false;
+}
+static long EffectiveWeight(Card target){
+ long w=target==null?0:target.ChildrenAndSelfWeight;
+ if(!Plugin.StealWeight.Value||target==null||EClass.pc==null)return w;
+ long limit=(long)EClass.pc.Evalue(281)*200L+(long)EClass.pc.STR*100L+1000L;
+ if(w<=limit||limit<=0)return w;
+ int baseChance=Math.Min(Math.Max(0,Plugin.StealWeightCap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.StealWeightDiv.Value)));
+ if(baseChance<=0)return w;
+ long scaled=(long)baseChance*limit/Math.Max(1L,w);
+ int chance=(int)Math.Max(1L,Math.Min(baseChance,scaled));
+ int seed=unchecked(target.uid*1103515245+Plugin.Luck()*97+EClass.world.date.GetRaw());
+ int roll=(seed&0x7fffffff)%100;
+ if(roll<chance){Plugin.I.Logger.LogInfo($"훔치기 중량 운 우회: {w}>{limit}, 확률 {chance}%");return limit;}
+ return w;
+}
+static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions,MethodBase __originalMethod){
+ int n=0;
+ foreach(var ci in instructions){
+   if(Getter!=null&&ci.operand is MethodInfo m&&m==Getter&&(ci.opcode==OpCodes.Call||ci.opcode==OpCodes.Callvirt)){
+     n++;yield return new CodeInstruction(OpCodes.Call,Helper);
+   }else yield return ci;
+ }
+ if(n!=1)Plugin.I.Logger.LogWarning($"v3.2: {__originalMethod.DeclaringType?.Name}.{__originalMethod.Name}의 중량 getter 교체 수={n}. 예상=1.");
 }
 }
 

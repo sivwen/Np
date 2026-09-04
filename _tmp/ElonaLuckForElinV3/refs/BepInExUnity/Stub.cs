@@ -1,0 +1,1 @@
+namespace BepInEx{public class BaseUnityPlugin{public Configuration.ConfigFile Config{get;}=new Configuration.ConfigFile();public Logging.ManualLogSource Logger{get;}=new Logging.ManualLogSource();}}

@@ -1,28 +1,22 @@
-# Elona Luck for Elin 2.0.2 UI Hotfix
+# Elona Luck for Elin 2.0.3 Load/Render Hotfix
 
-이 버전은 v2.0.1 설치 후 모드 뷰어/UI가 깨지는 문제를 우선 수정한 핫픽스입니다.
+v2.0.2에서 모드가 실제 로드된 뒤 월드 타일/카드 렌더링이 무너질 수 있는 문제를 우선 수정한 핫픽스입니다.
 
-주요 수정:
-- package.xml의 <version>을 모드 릴리스 번호로 잘못 사용하던 문제 수정
-  - Elin에서 이 값은 게임 호환 버전이므로 0.23.338로 복구
-- 모드 뷰어 설정 섹션/항목명/설명을 전부 한글화
-- 별도 설정창은 추가하지 않음
-- BepInEx/모드 뷰어 설정 화면에서 기존 방식 그대로 조절
-- 캐릭터 가챠 best-of 중 UI 흐름에서 임시 Chara.Destroy()를 호출하던 부분 제거
-  - 가챠 화면 객체 수명주기와 충돌할 가능성 차단
-- v2.0.1의 드롭 재설계 유지
-  - 피규어/박제 Luck 미적용
-  - 시체/유전자 해부학+운
-  - 몬스터 고유 드롭 Luck
-  - 장비/소지품은 크리티컬/Finish/처형자/오버킬+운
+핵심 수정:
+- 장비 품질/인챈트 Luck 패치를 더 이상 모든 Thing.OnCreate에 적용하지 않습니다.
+- ThingGen.Create()로 실제 신규 Thing을 만드는 중에만 Thing.OnCreate Luck 보정이 활성화됩니다.
+- 저장 불러오기, 기존 월드 카드 복원, UI/모드 뷰어가 만든 임시 Thing에는 개입하지 않습니다.
+- 기존 장비를 로드하면서 ApplyMaterial(true/false), AddEnchant(), rarity 변경이 실행될 가능성을 차단했습니다.
+- package.xml 호환 버전은 0.23.338 유지.
+- 설정 섹션/항목/설명은 한글 유지.
+- 별도 설정창은 만들지 않으며 기존 Mod Options/Mod Config GUI에서 조절합니다.
 
-중요:
-기존 v2.0.1에서 생성된 영문 설정 파일이 남아 있다면,
-BepInEx/config/sivwen.elin.elonaluck.cfg 를 삭제한 뒤 게임을 한 번 실행하는 것을 권장합니다.
-새 한글 설정 파일이 자동 생성됩니다.
+권장 테스트:
+1. 기존 sivwen.elin.elonaluck.cfg 삭제
+2. v2.0.3 폴더로 완전히 교체
+3. 게임 실행 후 같은 세이브 로드
+4. 월드 타일/캐릭터/오브젝트가 정상 렌더링되는지 확인
+5. 새 장비 생성 시에만 Luck 품질/인챈트가 적용되는지 확인
 
-설치:
-Elin/Package/ElonaLuckForElin/
-
-호환 버전:
-Elin EA 23.338 Patch 2
+주의:
+- 이전 v2.0.2 로그에는 본 모드가 로드되지 않은 상태가 확인됐으므로, 문제 재현 시에는 v2.0.3이 실제 로드된 새 LogOutput.log가 필요합니다.

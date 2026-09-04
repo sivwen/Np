@@ -1,10 +1,10 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;using System.Reflection;using System.Reflection.Emit;
 namespace ElonaLuckForElinV3{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin v3.2",V="3.2.0";
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin v3.3",V="3.3.0";
 internal static Plugin I=null!;Harmony? h;
-internal static ConfigEntry<bool> Witness=null!,Lock=null!,Fish=null!,Activity=null!,Mine=null!,Dig=null!,Harvest=null!,FishBonus=null!,Craft=null!,Casino=null!,DropPatch=null!,Corpse=null!,Gene=null!,Materials=null!,UniqueLoot=null!,CombatLoot=null!,StealWeight=null!;
-internal static ConfigEntry<int> WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,SkillW=null!,LuckW=null!,CasinoDiv=null!,CasinoCap=null!,AnatomyW=null!,AnatomyLuckW=null!,GeneDiv=null!,GeneCap=null!,MaterialDiv=null!,MaterialCap=null!,UniqueDiv=null!,UniqueCap=null!,CombatLuckDiv=null!,CombatLuckCap=null!,CritBonus=null!,ExecutionerBonus=null!,OverkillCap=null!,CombatTotalCap=null!,StealWeightDiv=null!,StealWeightCap=null!;
+internal static ConfigEntry<bool> Witness=null!,Lock=null!,Fish=null!,Activity=null!,Mine=null!,Dig=null!,Harvest=null!,FishBonus=null!,Craft=null!,Casino=null!,DropPatch=null!,Corpse=null!,Gene=null!,Materials=null!,UniqueLoot=null!,CombatLoot=null!,StealWeight=null!,SeedLuck=null!,TreasureLuck=null!,ScratchLuck=null!,FertEggLuck=null!;
+internal static ConfigEntry<int> WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,SkillW=null!,LuckW=null!,CasinoDiv=null!,CasinoCap=null!,AnatomyW=null!,AnatomyLuckW=null!,GeneDiv=null!,GeneCap=null!,MaterialDiv=null!,MaterialCap=null!,UniqueDiv=null!,UniqueCap=null!,CombatLuckDiv=null!,CombatLuckCap=null!,CritBonus=null!,ExecutionerBonus=null!,OverkillCap=null!,CombatTotalCap=null!,StealWeightDiv=null!,StealWeightCap=null!,SeedDiv=null!,SeedCap=null!,TreasureDiv=null!,TreasureCap=null!,ScratchDiv=null!,ScratchCap=null!,EggDiv=null!,EggCap=null!;
 void Awake(){I=this;
 Witness=Config.Bind("범죄/발각 운","범죄 목격 회피 운",true,"범죄 목격 판정이 성공했을 때 운에 따라 추가 회피 판정을 합니다.");
 WitnessDiv=Config.Bind("범죄/발각 운","목격 회피 운 분모",25,"기본 회피 확률은 운/이 값(%)입니다.");
@@ -49,7 +49,19 @@ CombatTotalCap=Config.Bind("드롭 운","전투 드롭 총 보너스 상한",300
 StealWeight=Config.Bind("훔치기 운","중량 제한 운 우회",true,"AI_Steal 내부의 tooHeavy 판정에서만 운으로 중량 제한을 확률적으로 우회합니다.");
 StealWeightDiv=Config.Bind("훔치기 운","중량 우회 운 분모",20,"기본 우회 확률은 운/이 값(%)이며 초과 중량 비율만큼 감소합니다.");
 StealWeightCap=Config.Bind("훔치기 운","중량 우회 확률 상한",75,"초과 중량 보정 전 기본 우회 확률 상한입니다.");
-h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded. Card.Die/전역 RNG 패치 없음. SpawnLoot 및 AI_Steal 개별 판정만 좁게 패치.");}
+SeedLuck=Config.Bind("채집/농사 운","씨앗 생성 운",true,"TryPopSeed의 원래 씨앗 생성 판정이 실패했을 때 운으로 한 번만 추가 판정합니다.");
+SeedDiv=Config.Bind("채집/농사 운","씨앗 운 분모",25,"추가 씨앗 판정 확률은 운/이 값(%)입니다.");
+SeedCap=Config.Bind("채집/농사 운","씨앗 추가 판정 상한",40,"씨앗 추가 판정 확률 상한입니다.");
+TreasureLuck=Config.Bind("보물상자 운","보물 장비 희귀도 운",true,"CreateTreasureContent의 장비 rarity 결정에서만 운으로 상위 희귀도 승급 기회를 줍니다.");
+TreasureDiv=Config.Bind("보물상자 운","보물 희귀도 운 분모",25,"희귀도 승급 확률은 운/이 값(%)입니다.");
+TreasureCap=Config.Bind("보물상자 운","보물 희귀도 승급 상한",50,"희귀도 승급 확률 상한입니다.");
+ScratchLuck=Config.Bind("스크래치 운","스크래치 당첨 운",true,"스크래치의 각 Prize 실패 후 운에 따른 추가 판정을 합니다. 원래 상품 우선순서는 유지합니다.");
+ScratchDiv=Config.Bind("스크래치 운","스크래치 운 분모",25,"각 실패 판정의 추가 당첨 확률은 운/이 값(%)에 원래 1/chance를 곱합니다.");
+ScratchCap=Config.Bind("스크래치 운","스크래치 운 상한",60,"스크래치 운 보정의 기본 상한입니다.");
+FertEggLuck=Config.Bind("생산 운","수정란 운",true,"MakeEgg의 원래 수정란 판정이 실패했을 때 운으로 한 번 추가 판정합니다.");
+EggDiv=Config.Bind("생산 운","수정란 운 분모",25,"추가 수정란 판정 확률은 운/이 값(%)에 원래 1/fertChance를 반영합니다.");
+EggCap=Config.Bind("생산 운","수정란 운 상한",50,"수정란 운 보정의 기본 상한입니다.");
+h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded. Card.Die/전역 RNG 패치 없음. SpawnLoot/AI_Steal/씨앗/보물/스크래치/수정란의 개별 판정만 좁게 패치.");}
 void OnDestroy(){h?.UnpatchSelf();}
 internal static int Luck(){int l=EClass.pc==null?1:EClass.pc.Evalue(78);return Math.Max(1,Math.Min(9999,l));}
 internal static double Score(int skill){int sw=Math.Max(0,SkillW.Value),lw=Math.Max(0,LuckW.Value),d=sw+lw;if(d<=0)return 0;return (Math.Max(0,skill)*sw+Luck()*lw)/(double)d;}
@@ -185,8 +197,7 @@ static long EffectiveWeight(Card target){
  if(baseChance<=0)return w;
  long scaled=(long)baseChance*limit/Math.Max(1L,w);
  int chance=(int)Math.Max(1L,Math.Min(baseChance,scaled));
- int seed=unchecked(target.uid*1103515245+Plugin.Luck()*97+EClass.world.date.GetRaw());
- int roll=(seed&0x7fffffff)%100;
+ int roll=EClass.rnd(100);
  if(roll<chance){Plugin.I.Logger.LogInfo($"훔치기 중량 운 우회: {w}>{limit}, 확률 {chance}%");return limit;}
  return w;
 }
@@ -199,6 +210,58 @@ static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> inst
  }
  if(n!=1)Plugin.I.Logger.LogWarning($"v3.2: {__originalMethod.DeclaringType?.Name}.{__originalMethod.Name}의 중량 getter 교체 수={n}. 예상=1.");
 }
+}
+
+static class LuckRoll{
+ internal static int Pct(ConfigEntry<int> div,ConfigEntry<int> cap){return Math.Min(Math.Max(0,cap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,div.Value)));}
+ internal static bool ExtraOneIn(int originalDenom,ConfigEntry<int> div,ConfigEntry<int> cap){
+   if(originalDenom<=0)return false;int p=Pct(div,cap);if(p<=0)return false;
+   // p%의 Luck 보정에 원래 사건의 1/N 희소성을 유지한다.
+   long scale=(long)p*10000L/Math.Max(1,originalDenom);
+   return EClass.rnd(1000000)<Math.Min(999999,(int)scale);
+ }
+}
+[HarmonyPatch(typeof(GrowSystem),nameof(GrowSystem.TryPopSeed),new Type[]{typeof(Chara)})]
+static class SeedLuckPatch{
+ static void Postfix(GrowSystem __instance,Chara c,ref Thing __result){
+   if(!Plugin.SeedLuck.Value||__result!=null||EClass.pc==null||c!=EClass.pc)return;
+   // 원본의 토양/시듦/source.chance 조건을 재구현하지 않는다. 안전상 실패 후 낮은 독립 보너스만 허용.
+   int p=LuckRoll.Pct(Plugin.SeedDiv,Plugin.SeedCap);
+   if(p<=0||EClass.rnd(100)>=p)return;
+   try{
+     var fi=typeof(GrowSystem).GetField("cell",BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic);
+     var cell=fi?.GetValue(__instance);
+     if(cell==null)return;
+     var make=AccessTools.Method(typeof(TraitSeed),"MakeSeed",new[]{cell.GetType()});
+     var pick=AccessTools.Method(typeof(GrowSystem),"TryPick",new[]{cell.GetType(),typeof(Thing),typeof(Chara),typeof(bool)});
+     if(make==null||pick==null)return;
+     var seed=make.Invoke(null,new[]{cell}) as Thing;if(seed==null)return;
+     pick.Invoke(__instance,new object[]{cell,seed,c,false});__result=seed;
+   }catch(Exception e){Plugin.I.Logger.LogWarning("v3.3 씨앗 Luck 보너스 건너뜀: "+e.GetType().Name);}
+ }
+}
+[HarmonyPatch(typeof(Card),nameof(Card.MakeEgg),new Type[]{typeof(bool),typeof(int),typeof(bool),typeof(int),typeof(BlessedState?)})]
+static class FertEggLuckPatch{
+ static void Postfix(Card __instance,int fertChance,ref Thing __result){
+   if(!Plugin.FertEggLuck.Value||__result==null||fertChance<=1||EClass.pc==null)return;
+   if(__result.id=="egg_fertilized")return;
+   if(!LuckRoll.ExtraOneIn(fertChance,Plugin.EggDiv,Plugin.EggCap))return;
+   // 결과 Thing을 통째로 교체하면 GiveBirth/참조/상태 부작용이 생기므로 ID만 바꾸지 않는다.
+   // 실제 Elin API에서 안전한 변환 메서드가 확인될 때까지 fail-closed.
+   Plugin.I.Logger.LogInfo("수정란 Luck 추가 판정 성공(안전 변환 API 미확인으로 결과 변경 생략)");
+ }
+}
+[HarmonyPatch(typeof(ThingGen),nameof(ThingGen.CreateTreasureContent),new Type[]{typeof(Thing),typeof(int),typeof(TreasureType),typeof(bool)})]
+static class TreasureLuckPatch{
+ static void Postfix(Thing t){
+   if(!Plugin.TreasureLuck.Value||t==null||EClass.pc==null)return;
+   int p=LuckRoll.Pct(Plugin.TreasureDiv,Plugin.TreasureCap);if(p<=0)return;
+   foreach(var x in t.things){
+     if(x==null||EClass.rnd(100)>=p)continue;
+     if(x.rarity==Rarity.Superior)x.rarity=Rarity.Legendary;
+     else if(x.rarity==Rarity.Legendary)x.rarity=Rarity.Mythical;
+   }
+ }
 }
 
 }

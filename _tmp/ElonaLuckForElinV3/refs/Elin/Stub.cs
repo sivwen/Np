@@ -9,6 +9,7 @@ public class Card{
  public int c_lockLv;
  public int hp;
  public int MaxHP=100;
+ public int LV=1;
  public int uid=1;
  public long ChildrenAndSelfWeight=>1000;
  public bool IsEquipment=>false;

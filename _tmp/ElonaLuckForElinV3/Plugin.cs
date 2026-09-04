@@ -122,11 +122,11 @@ static bool Ldc(CodeInstruction c,int v){
 static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions){
  var src=new List<CodeInstruction>(instructions);var chance=new List<int>();var anatomy=new List<int>();
  for(int i=0;i<src.Count;i++){if(IsChance(src[i]))chance.Add(i);if(i>0&&IsCall(src[i],"Evalue")&&Ldc(src[i-1],290))anatomy.Add(i);}
- if(chance.Count<14||anatomy.Count<2){Plugin.I.Logger.LogWarning($"v3.1 SpawnLoot 패턴 불일치: chance={chance.Count}, anatomy={anatomy.Count}. 드롭 패치를 적용하지 않습니다.");return src;}
+ if(chance.Count<14||anatomy.Count<2){Plugin.I.Logger.LogWarning($"v3.1 SpawnLoot 패턴 불일치: chance={chance.Count}, anatomy={anatomy.Count}. 드롭 패치를 적용하지 않습니다.");foreach(var x in src)yield return x;yield break;}
  int unique=-1;for(int i=chance[2]+1;i<chance[3];i++){if(i>0&&IsCall(src[i],"rnd")&&Ldc(src[i-1],1000)){unique=i;break;}}
  int rndf=-1;for(int i=chance[13]+1;i<src.Count;i++){if(IsCall(src[i],"rndf")){rndf=i;break;}}
  int eq100=-1,item5=-1;if(rndf>=0){for(int i=rndf+1;i<src.Count;i++){if(eq100<0&&i>0&&IsCall(src[i],"rnd")&&Ldc(src[i-1],100)){eq100=i;continue;}if(eq100>=0&&i>0&&IsCall(src[i],"rnd")&&Ldc(src[i-1],5)){item5=i;break;}}}
- if(unique<0||rndf<0||eq100<0||item5<0){Plugin.I.Logger.LogWarning($"v3.1 SpawnLoot 세부 패턴 불일치: unique={unique}, rndf={rndf}, eq100={eq100}, item5={item5}. 드롭 패치를 적용하지 않습니다.");return src;}
+ if(unique<0||rndf<0||eq100<0||item5<0){Plugin.I.Logger.LogWarning($"v3.1 SpawnLoot 세부 패턴 불일치: unique={unique}, rndf={rndf}, eq100={eq100}, item5={item5}. 드롭 패치를 적용하지 않습니다.");foreach(var x in src)yield return x;yield break;}
  var anatomySet=new HashSet<int>(anatomy);var chanceKind=new Dictionary<int,int>{{chance[2],1}};
  for(int n=3;n<=9;n++)chanceKind[chance[n]]=2;for(int n=11;n<=13;n++)chanceKind[chance[n]]=2;
  for(int i=0;i<src.Count;i++){

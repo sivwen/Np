@@ -1,1 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><TargetFramework>netstandard2.0</TargetFramework><AssemblyName>ElonaLuckForElin</AssemblyName><RootNamespace>ElonaLuckForElinV3</RootNamespace><Version>3.0.0</Version><LangVersion>latest</LangVersion><Nullable>enable</Nullable><OutputType>Library</OutputType><EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup><ItemGroup><ProjectReference Include="refs/BepInExCore/BepInExCore.csproj"/><ProjectReference Include="refs/BepInExUnity/BepInExUnity.csproj"/><ProjectReference Include="refs/Harmony/Harmony.csproj"/><ProjectReference Include="refs/Elin/Elin.csproj"/></ItemGroup><ItemGroup><Compile Include="Plugin.cs"/></ItemGroup></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+<TargetFramework>netstandard2.0</TargetFramework>
+<AssemblyName>ElonaLuckForElin</AssemblyName>
+<RootNamespace>ElonaLuckForElinV3</RootNamespace>
+<Version>3.1.0</Version>
+<LangVersion>latest</LangVersion>
+<Nullable>enable</Nullable>
+<OutputType>Library</OutputType>
+<EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+</PropertyGroup>
+<ItemGroup>
+<ProjectReference Include="refs/BepInExCore/BepInExCore.csproj"/>
+<ProjectReference Include="refs/BepInExUnity/BepInExUnity.csproj"/>
+<ProjectReference Include="refs/Harmony/Harmony.csproj"/>
+<ProjectReference Include="refs/Elin/Elin.csproj"/>
+</ItemGroup>
+<ItemGroup><Compile Include="Plugin.cs"/></ItemGroup>
+</Project>

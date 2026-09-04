@@ -1,9 +1,9 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;
 namespace ElonaLuckForElin{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="1.3.0";
-internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,Log=null!;
-internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!;
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="1.4.0";
+internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,Log=null!;
+internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!;
 internal static Plugin I=null!; Harmony? h;
 void Awake(){I=this;
 Q=Config.Bind("Elona Luck","EnableEquipmentQualityLuck",true,"Elona-style one-tier equipment quality upgrade.");
@@ -24,6 +24,18 @@ DropCap=Config.Bind("Drop Luck","DropRateBonusCapPercent",100,"Maximum effective
 StealWeight=Config.Bind("Steal Luck","EnableStealWeightBypassLuck",true,"Luck can bypass stealing weight limit.");
 StealDiv=Config.Bind("Steal Luck","StealWeightLuckDivisor",20,"Base bypass chance is Luck/divisor percent before overweight penalty.");
 StealCap=Config.Bind("Steal Luck","StealWeightBypassCapPercent",75,"Maximum bypass chance before overweight penalty.");
+WitnessLuck=Config.Bind("Crime Luck","EnableWitnessAvoidanceLuck",true,"Luck can make witnesses fail to notice PC crimes, including stealing.");
+WitnessDiv=Config.Bind("Crime Luck","WitnessAvoidLuckDivisor",25,"Base witness-avoidance chance is Luck/divisor percent.");
+WitnessCap=Config.Bind("Crime Luck","WitnessAvoidChanceCapPercent",60,"Maximum witness-avoidance chance.");
+LockLuck=Config.Bind("Lock Luck","EnableLockpickLuck",true,"Luck can reduce effective lock level for a lockpicking attempt.");
+LockDiv=Config.Bind("Lock Luck","LockLuckDivisor",20,"Effective lock-level reduction is Luck/divisor.");
+LockCap=Config.Bind("Lock Luck","LockLevelReductionCap",100,"Maximum effective lock-level reduction.");
+FishLuck=Config.Bind("Fishing Luck","EnableFishingQualityLuck",true,"Luck can increase caught fish tier by one.");
+FishDiv=Config.Bind("Fishing Luck","FishingTierLuckDivisor",25,"Fish tier-up chance is Luck/divisor percent.");
+FishCap=Config.Bind("Fishing Luck","FishingTierChanceCapPercent",50,"Maximum fish tier-up chance.");
+DismantleLuck=Config.Bind("Harvest Luck","EnableDismantleYieldLuck",true,"Luck improves fractional dismantle material recovery.");
+DismantleDiv=Config.Bind("Harvest Luck","DismantleYieldLuckDivisor",50,"Each divisor Luck adds 1% effective fractional recovery chance.");
+DismantleCap=Config.Bind("Harvest Luck","DismantleYieldBonusCapPercent",100,"Maximum effective fractional recovery bonus.");
 Craft=Config.Bind("Compatibility","ApplyToCraftedEquipment",false,"Include crafted equipment.");
 Ammo=Config.Bind("Compatibility","IncludeAmmo",false,"Include ammo.");
 Log=Config.Bind("Diagnostics","DebugLogging",false,"Log Luck upgrades.");
@@ -66,5 +78,40 @@ if(passed.Contains(__instance.uid)){__result=0;return;}
 int luck=Plugin.Luck();int chance=Math.Min(Plugin.StealCap.Value,Math.Max(0,luck/Math.Max(1,Plugin.StealDiv.Value)));if(chance<=0)return;
 chance=(int)((long)chance*Math.Max(1,limit)/Math.Max(1,__result));if(chance<1)chance=1;
 if(EClass.rnd(100)<chance){passed.Add(__instance.uid);__result=0;Plugin.Info($"Luck {luck}: bypassed steal weight limit for uid {__instance.uid} ({chance}%)");}
+}}
+[HarmonyPatch(typeof(Point),nameof(Point.TryWitnessCrime),new Type[]{typeof(Chara),typeof(Chara),typeof(int),typeof(Func<Chara,bool>)})]static class WitnessLuckPatch{
+static void Prefix(Chara criminal,ref Func<Chara,bool> funcWitness){
+if(!Plugin.WitnessLuck.Value||criminal==null||EClass.pc==null||criminal!=EClass.pc)return;
+int avoid=Math.Min(Plugin.WitnessCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.WitnessDiv.Value)));if(avoid<=0)return;
+var orig=funcWitness;
+if(orig==null)funcWitness=(Chara c)=>EClass.rnd(10)==0&&EClass.rnd(100)>=avoid;
+else funcWitness=(Chara c)=>orig(c)&&EClass.rnd(100)>=avoid;
+}}
+
+[HarmonyPatch(typeof(Trait),nameof(Trait.TryOpenLock),new Type[]{typeof(Chara),typeof(bool)})]static class LockLuckPatch{
+public sealed class S{public int lv;public bool changed;}
+static void Prefix(Trait __instance,Chara cc,out S __state){
+__state=new S();if(!Plugin.LockLuck.Value||cc==null||!cc.IsPC||__instance.owner==null)return;
+int cut=Math.Min(Plugin.LockCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.LockDiv.Value)));if(cut<=0)return;
+__state.lv=__instance.owner.c_lockLv;int nl=Math.Max(0,__state.lv-cut);if(nl<__state.lv){__instance.owner.c_lockLv=nl;__state.changed=true;}
+}
+static void Postfix(Trait __instance,LockOpenState __result,S __state){if(__state!=null&&__state.changed&&__result!=LockOpenState.Success)__instance.owner.c_lockLv=__state.lv;}
+}
+
+[HarmonyPatch(typeof(AI_Fish),nameof(AI_Fish.Makefish),new Type[]{typeof(Chara)})]static class FishingLuckPatch{
+static void Postfix(Chara c,ref Thing __result){
+if(!Plugin.FishLuck.Value||c==null||!c.IsPC||__result==null||__result.category==null||!__result.category.IsChildOf("fish"))return;
+int chance=Math.Min(Plugin.FishCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.FishDiv.Value)));if(chance<=0||__result.tier>=3)return;
+if(EClass.rnd(100)<chance){int before=__result.tier;__result.SetTier(Math.Min(3,before+1));Plugin.Info($"Luck {Plugin.Luck()}: fishing tier {before}->{__result.tier}");}
+}}
+
+[HarmonyPatch(typeof(EClass),nameof(EClass.rndf),new Type[]{typeof(float)})]static class DismantleLuckPatch{
+static void Prefix(ref float a){
+if(!Plugin.DismantleLuck.Value||a<=1f)return;
+var st=new StackTrace(1,false);bool ok=false;var fs=st.GetFrames();
+if(fs!=null)for(int i=0;i<fs.Length&&i<10;i++){var m=fs[i].GetMethod();var dn=m?.DeclaringType?.FullName??"";if(dn.Contains("TaskHarvest")&&(m?.Name??"").Contains("HarvestThing")){ok=true;break;}}
+if(!ok)return;
+int bonus=Math.Min(Plugin.DismantleCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.DismantleDiv.Value)));if(bonus<=0)return;
+a=Math.Max(1f,a*100f/(100f+bonus));
 }}
 }

@@ -1,9 +1,9 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;
 namespace ElonaLuckForElin{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="1.5.0";
-internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,Log=null!;
-internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!;
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="1.6.0";
+internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,NestLuck=null!,SeedLuck=null!,TreasureLuck=null!,ScratchLuck=null!,Log=null!;
+internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!,NestDiv=null!,NestCap=null!,SeedDiv=null!,SeedCap=null!,TreasureDiv=null!,TreasureCap=null!,TreasureMythDiv=null!,ScratchDiv=null!,ScratchCap=null!;
 internal static Plugin I=null!; Harmony? h;
 void Awake(){I=this;
 Q=Config.Bind("Elona Luck","EnableEquipmentQualityLuck",true,"Elona-style one-tier equipment quality upgrade.");
@@ -47,6 +47,19 @@ ActSkillWeight=Config.Bind("SkillAndLuckMatter Replacement","SkillWeight",3,"Ori
 ActLuckWeight=Config.Bind("SkillAndLuckMatter Replacement","LuckWeight",2,"Original default luck weight.");
 ActSkillMod=Config.Bind("SkillAndLuckMatter Replacement","SkillLevelModifierPercent",100,"Original default modifier: 100%.");
 ActLuckMod=Config.Bind("SkillAndLuckMatter Replacement","LuckLevelModifierPercent",100,"Original default modifier: 100%.");
+NestLuck=Config.Bind("Rare Outcome Luck","EnableFertilizedEggLuck",true,"Luck improves fertilized egg chance from searchable bird nests.");
+NestDiv=Config.Bind("Rare Outcome Luck","FertilizedEggLuckDivisor",50,"Extra fertilized-egg reroll chance is Luck/divisor percent.");
+NestCap=Config.Bind("Rare Outcome Luck","FertilizedEggExtraChanceCapPercent",40,"Maximum extra fertilized-egg reroll chance.");
+SeedLuck=Config.Bind("Rare Outcome Luck","EnableSeedRecoveryLuck",true,"Luck improves manual seed recovery checks.");
+SeedDiv=Config.Bind("Rare Outcome Luck","SeedRecoveryLuckDivisor",50,"Each divisor Luck adds roughly 1% effective seed-check strength.");
+SeedCap=Config.Bind("Rare Outcome Luck","SeedRecoveryBonusCapPercent",200,"Maximum effective seed-check strength bonus.");
+TreasureLuck=Config.Bind("Rare Outcome Luck","EnableTreasureRarityLuck",true,"Luck improves equipment rarity generated inside treasure chests.");
+TreasureDiv=Config.Bind("Rare Outcome Luck","TreasureLegendaryLuckDivisor",50,"Luck/divisor is subtracted from the chest rarity roll.");
+TreasureCap=Config.Bind("Rare Outcome Luck","TreasureLegendaryRollReductionCap",50,"Maximum reduction on the 0-99 treasure rarity roll.");
+TreasureMythDiv=Config.Bind("Rare Outcome Luck","TreasureMythicalLuckDivisor",500,"Each divisor Luck reduces the Mythical 1/N denominator by 1, minimum N=5.");
+ScratchLuck=Config.Bind("Rare Outcome Luck","EnableScratchPrizeLuck",true,"Luck improves high-tier scratch prize checks.");
+ScratchDiv=Config.Bind("Rare Outcome Luck","ScratchLuckDivisor",50,"Each divisor Luck adds 1% effective chance to scratch prize checks.");
+ScratchCap=Config.Bind("Rare Outcome Luck","ScratchChanceBonusCapPercent",150,"Maximum effective scratch prize chance bonus.");
 Craft=Config.Bind("Compatibility","ApplyToCraftedEquipment",false,"Include crafted equipment.");
 Ammo=Config.Bind("Compatibility","IncludeAmmo",false,"Include ammo.");
 Log=Config.Bind("Diagnostics","DebugLogging",false,"Log Luck upgrades.");
@@ -171,6 +184,57 @@ static void Postfix(List<Thing>? __state,Thing __result){if(__result!=null)Craft
 [HarmonyPatch(typeof(RecipeCard),nameof(RecipeCard.Craft),new Type[]{typeof(BlessedState),typeof(bool),typeof(List<Thing>),typeof(TraitCrafter),typeof(bool)})]static class RecipeCardCraftRefundPatch{
 static void Prefix(RecipeCard __instance,List<Thing> ings,bool model,out List<Thing>? __state){__state=CraftRefundCore.Prepare(__instance,ings,model);}
 static void Postfix(List<Thing>? __state,Thing __result){if(__result!=null)CraftRefundCore.Refund(__state);}
+}
+
+static class RareOutcomeContext{
+[ThreadStatic] internal static int seedDepth;
+[ThreadStatic] internal static int seedRndIndex;
+internal static int PercentBonus(ConfigEntry<int> div,ConfigEntry<int> cap){return Math.Min(Math.Max(0,cap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,div.Value)));}
+}
+
+[HarmonyPatch(typeof(GrowSystem),nameof(GrowSystem.TryPopSeed),new Type[]{typeof(Chara)})]static class SeedLuckContextPatch{
+static void Prefix(){if(Plugin.SeedLuck.Value){RareOutcomeContext.seedDepth++;RareOutcomeContext.seedRndIndex=0;}}
+static Exception? Finalizer(Exception? __exception){if(Plugin.SeedLuck.Value&&RareOutcomeContext.seedDepth>0)RareOutcomeContext.seedDepth--;return __exception;}
+}
+
+[HarmonyPatch(typeof(EClass),nameof(EClass.rnd),new Type[]{typeof(int)})]static class RareOutcomeRndPatch{
+static void Prefix(ref int a){
+if(a<=1)return;
+var fs=new StackTrace(1,false).GetFrames();if(fs==null)return;
+bool scratch=false,treasureSet=false;
+for(int i=0;i<fs.Length&&i<12;i++){
+ var m=fs[i].GetMethod();string dn=m?.DeclaringType?.FullName??"";string n=m?.Name??"";
+ if(Plugin.ScratchLuck.Value&&dn.Contains("TraitCrafter")&&n.Contains("g__Prize"))scratch=true;
+ if(Plugin.TreasureLuck.Value&&dn.Contains("ThingGen")&&n.Contains("g__SetRarity"))treasureSet=true;
+ if(Plugin.NestLuck.Value&&dn.Contains("SurvivalManager")&&n.Contains("OnMineWreck")&&a==10){
+   int extra=RareOutcomeContext.PercentBonus(Plugin.NestDiv,Plugin.NestCap);
+   if(extra>0&&EClass.rnd(100)<extra)a=1;
+   return;
+ }
+}
+if(scratch){
+ int bonus=RareOutcomeContext.PercentBonus(Plugin.ScratchDiv,Plugin.ScratchCap);
+ if(bonus>0){int na=(int)(((long)a*100+99+bonus)/(100+bonus));if(na<1)na=1;if(na<a)a=na;}return;
+}
+if(treasureSet&&a==20){
+ int cut=Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.TreasureMythDiv.Value));a=Math.Max(5,a-cut);return;
+}
+if(Plugin.SeedLuck.Value&&RareOutcomeContext.seedDepth>0){
+ RareOutcomeContext.seedRndIndex++;
+ if(RareOutcomeContext.seedRndIndex==1){
+   int bonus=RareOutcomeContext.PercentBonus(Plugin.SeedDiv,Plugin.SeedCap);
+   if(bonus>0){int na=(int)(((long)a*100+99+bonus)/(100+bonus));if(na<1)na=1;a=na;}
+ }
+}
+}
+static void Postfix(int a,ref int __result){
+if(!Plugin.TreasureLuck.Value||a!=100)return;
+var fs=new StackTrace(1,false).GetFrames();if(fs==null)return;
+for(int i=0;i<fs.Length&&i<10;i++){var m=fs[i].GetMethod();string dn=m?.DeclaringType?.FullName??"";string n=m?.Name??"";if(dn.Contains("ThingGen")&&n.Contains("g__SetRarity")){
+ int cut=Math.Min(Math.Max(0,Plugin.TreasureCap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.TreasureDiv.Value)));
+ __result=Math.Max(0,__result-cut);return;
+}}
+}
 }
 
 }

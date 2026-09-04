@@ -6,7 +6,9 @@ public class Card{
  public Category category=new Category();
  public int c_lockLv;
  public int hp;
- public int MaxHP=100;\n public int uid=1;\n public long ChildrenAndSelfWeight=>1000;
+ public int MaxHP=100;
+ public int uid=1;
+ public long ChildrenAndSelfWeight=>1000;
  public virtual int Evalue(int id)=>0;
  public bool IsPC=>true;
  public void SpawnLoot(Card origin){}

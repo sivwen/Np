@@ -1,7 +1,7 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;
 namespace ElonaLuckForElin{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="2.0.2";
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="2.0.3";
 internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,NestLuck=null!,SeedLuck=null!,TreasureLuck=null!,ScratchLuck=null!,GachaLuck=null!,CasinoLuck=null!,CorpseLuck=null!,GeneLuck=null!,UniqueLootLuck=null!,CombatLootLuck=null!,GeneralMaterialLuck=null!,Log=null!;
 internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!,NestDiv=null!,NestCap=null!,SeedDiv=null!,SeedCap=null!,TreasureDiv=null!,TreasureCap=null!,TreasureMythDiv=null!,ScratchDiv=null!,ScratchCap=null!,GachaDiv=null!,GachaCap=null!,CasinoDiv=null!,CasinoCap=null!,AnatomySkillWeight=null!,AnatomyLuckWeight=null!,GeneBonusCap=null!,UniqueLootDiv=null!,UniqueLootCap=null!,CombatLuckDiv=null!,CombatLuckCap=null!,CritKillBonus=null!,FinishKillBonus=null!,ExecutionerBonus=null!,OverkillCap=null!,CombatTotalCap=null!;
 internal static Plugin I=null!; Harmony? h;
@@ -86,7 +86,7 @@ CasinoCap=Config.Bind("카지노 운","카지노 보너스 확률 상한",50,"�
 Craft=Config.Bind("호환성","제작 장비에도 적용",false,"제작 장비에도 장비 운 보정을 적용합니다.");
 Ammo=Config.Bind("호환성","탄약 포함",false,"탄약에도 장비 운 보정을 적용합니다.");
 Log=Config.Bind("진단","디버그 로그",false,"운 보정 발생 내용을 로그에 기록합니다.");
-h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded.");}
+h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded. 신규 ThingGen.Create 생성 중에만 장비 품질/인챈트 운 패치를 적용합니다.");}
 void OnDestroy(){h?.UnpatchSelf();}
 internal static int Luck(){int l=EClass.pc==null?1:EClass.pc.Evalue(78);if(l<1)l=1;if(l>9999)l=9999;return l;}
 internal static bool Eligible(Thing x){return x.IsEquipmentOrRangedOrAmmo&&(!x.IsAmmo||Ammo.Value)&&(x.bp==null||!x.bp.isCraft||Craft.Value)&&(x.sourceCard==null||x.sourceCard.quality==0)&&!x.HasTag(CTAG.noRandomEnc);}
@@ -105,10 +105,20 @@ internal static int BonusRolls(int skill,bool crafting=false){
 double p=BonusChance(ActivityScore(skill));if(crafting)p/=10.0;int n=(int)Math.Floor(p);double f=p-n;if(f>0&&EClass.rnd(100000)<(int)(f*100000.0))n++;return n;
 }
 }
+static class ItemGenerationContext{
+[ThreadStatic] internal static int depth;
+internal static bool Active=>depth>0;
+}
 [HarmonyPatch(typeof(Thing),nameof(Thing.OnCreate),new Type[]{typeof(int)})]static class ThingCreateLuckPatch{
 public sealed class Snap{public readonly Dictionary<int,int>B=new();}
-static void Prefix(Thing __instance,out Snap __state){__state=new Snap();if(__instance.elements!=null)foreach(var kv in __instance.elements.dict)__state.B[kv.Key]=kv.Value.vBase;}
-static void Postfix(Thing __instance,int genLv,Snap __state){
+static void Prefix(Thing __instance,out Snap? __state){
+__state=null;
+if(!ItemGenerationContext.Active)return;
+__state=new Snap();
+if(__instance.elements!=null)foreach(var kv in __instance.elements.dict)__state.B[kv.Key]=kv.Value.vBase;
+}
+static void Postfix(Thing __instance,int genLv,Snap? __state){
+if(__state==null||!ItemGenerationContext.Active)return;
 var x=__instance;if(!Plugin.Eligible(x))return;int luck=Plugin.Luck();
 var touched=new List<Element>();if(x.elements!=null)foreach(var kv in x.elements.dict){int old=__state.B.TryGetValue(kv.Key,out var v)?v:0;if(kv.Value.vBase!=old)touched.Add(kv.Value);}
 if(Plugin.EV.Value){int pct=Math.Min(Plugin.ValueCap.Value,Math.Max(0,luck*100/Math.Max(1,Plugin.ValueDiv.Value)));if(pct>0)foreach(var e in touched){int add=Math.Abs(e.vBase)*pct/100;if(add<1&&e.vBase!=0)add=1;x.elements.ModBase(e.id,e.vBase>=0?add:-add);}}
@@ -177,9 +187,14 @@ static void Postfix(Card __instance,int ele,ref int __result){
 }
 }
 
-[HarmonyPatch(typeof(ThingGen),nameof(ThingGen.Create),new Type[]{typeof(string),typeof(int),typeof(int)})]static class LootCreatedTrackerPatch{
+[HarmonyPatch(typeof(ThingGen),nameof(ThingGen.Create),new Type[]{typeof(string),typeof(int),typeof(int)})]static class ThingGenerationAndLootTrackerPatch{
+static void Prefix(){ItemGenerationContext.depth++;}
 static void Postfix(string id){
  if(DeathLootContext.active&&DeathLootContext.createdIds!=null&&!string.IsNullOrEmpty(id))DeathLootContext.createdIds.Add(id);
+}
+static Exception? Finalizer(Exception? __exception){
+ if(ItemGenerationContext.depth>0)ItemGenerationContext.depth--;
+ return __exception;
 }
 }
 

@@ -207,8 +207,8 @@ for(int i=0;i<fs.Length&&i<12;i++){
  if(Plugin.ScratchLuck.Value&&dn.Contains("TraitCrafter")&&n.Contains("g__Prize"))scratch=true;
  if(Plugin.TreasureLuck.Value&&dn.Contains("ThingGen")&&n.Contains("g__SetRarity"))treasureSet=true;
  if(Plugin.NestLuck.Value&&dn.Contains("SurvivalManager")&&n.Contains("OnMineWreck")&&a==10){
-   int extra=RareOutcomeContext.PercentBonus(Plugin.NestDiv,Plugin.NestCap);
-   if(extra>0&&EClass.rnd(100)<extra)a=1;
+   int bonus=RareOutcomeContext.PercentBonus(Plugin.NestDiv,Plugin.NestCap);
+   if(bonus>0){int na=(int)(((long)a*100+99+bonus)/(100+bonus));if(na<2)na=2;a=na;}
    return;
  }
 }

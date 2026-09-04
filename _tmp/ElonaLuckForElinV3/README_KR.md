@@ -1,74 +1,72 @@
-# Elona Luck for Elin v3.1
+# Elona Luck for Elin v3.2
 
-v3.0 Core의 안전 원칙을 유지하면서 몬스터 드롭/시체/유전자를 다시 복원한 버전입니다.
+v3.1의 안전한 SpawnLoot transpiler 구조를 유지하면서, 훔치기 중량 제한을 전역 getter 패치 없이 복원한 버전입니다.
 
-## 가장 중요한 변경
-v2.x와 달리 다음 전역/생명주기 함수에는 패치를 걸지 않습니다.
-- Card.Die
-- Thing.OnCreate
-- ThingGen.Create
-- Card.Evalue
-- Card.ChildrenAndSelfWeight
-- EClass.rnd / rndf
-- Dice.Roll
+## 전투 장비/소지품 드롭 용어 정리
+v3.1에서 "Finish 처치"라고 표현한 것은 AttackSource.Finish를 의미하지 않습니다.
+실제 v3.1/v3.2의 전투 전리품 보정값은 다음입니다.
 
-Card.SpawnLoot에도 Prefix/Postfix를 걸지 않습니다.
-대신 SpawnLoot의 IL을 한 번 검사한 뒤, 예상한 패턴이 모두 맞을 때만 개별 판정식에 좁은 transpiler를 적용합니다.
-패턴이 하나라도 맞지 않으면 부분 적용하지 않고 드롭 확장 전체를 건너뜁니다.
-
-## 시체
-SpawnLoot 안에서 해부학(290)을 읽는 지점만 해부학+운 혼합값으로 교체합니다.
-기본 가중치:
-- 해부학 3
-- 운 2
-혼합값이 실제 해부학보다 낮으면 원래 해부학 값을 유지합니다.
-
-## 유전자
-원래 chance(200) 판정의 분모만 해부학+운으로 완화합니다.
-별도 유전자를 사후 생성하지 않습니다.
-기본:
-- 혼합값 / 2 만큼 상대 드롭 보너스(%)
-- 최대 +200%
-
-## 일반 소재
-피규어/박제는 건드리지 않습니다.
-다음 기존 chance() 판정에만 Luck 보정을 넣습니다.
-- memory_chip / scrap / microchip / bolt / battery
-- fang / skin / offal / heart
-- 골렘 결정
-
-기본:
-- Luck 50당 상대 확률 +1%
-- 최대 +100%
-
-## 몬스터 고유 드롭
-sourceCard.loot / race.loot의 기존
-num4 > rnd(1000)
-판정 중 첫 희귀 드롭 판정만 보정합니다.
-
-기본:
-- Luck 10당 상대 확률 +1%
-- 최대 +300%
-
-토끼 꼬리 등 몬스터별 loot 테이블에 등록된 희귀품은 이 계층의 대상입니다.
-
-## 몬스터 소지 장비/아이템
-사망 이벤트를 패치하지 않고 SpawnLoot 실행 시점의 상태만 읽습니다.
 - Luck
-- AttackProcess.Current의 실제 크리티컬
-- 처형자(1420)
-- 현재 음수 HP 기준 오버킬
+- 실제 마지막 공격의 크리티컬 여부(AttackProcess.Current.crit)
+- 처형자 피트(1420)
+- 오버킬: 현재 음수 HP / MaxHP 비율
 
-원래 DropChance / 1% 장비 / 20% 일반 소지품 판정의 확률만 완화합니다.
-Finish 판정은 v3.1에서는 안전한 직접 신호가 없으므로 제외했습니다.
+AttackSource.Finish는 Card.Die를 건드리지 않는 v3 원칙 때문에 아직 사용하지 않습니다.
 
-## 기존 v3 Core 기능
+## 훔치기 tooHeavy
+실제 Elin 코드는 AI_Steal 내부에서 다음 한 곳에서 중량 제한을 검사합니다.
+
+아이템 중량 > 훔치기(281) × 200 + STR × 100 + 1000
+
+v3.2는 Card.ChildrenAndSelfWeight 전역 getter를 패치하지 않습니다.
+대신 AI_Steal의 컴파일러 생성 내부 메서드 중 실제로 ChildrenAndSelfWeight를 호출하는 메서드만 런타임에 찾아,
+그 호출 1개를 안전한 보조 함수로 교체합니다.
+
+기본 우회 확률:
+- base = min(75%, Luck / 20)
+- final = base × (기본 중량 한도 / 실제 중량)
+
+예:
+Luck 1000 → base 50%
+- 한도의 1.25배: 약 40%
+- 한도의 2배: 약 25%
+- 한도의 5배: 약 10%
+
+같은 대상/같은 게임 시각에서는 결정값을 고정해 진행 틱마다 재굴림되는 문제를 피합니다.
+
+## 낚시 감사 결과
+AI_Fish.Makefish에는 다음 판정이 독립적으로 존재합니다.
+- 낚시 실패
+- 고대책
+- 메달
+- 플래티넘/스크래치/카지노코인/가챠코인
+- 특수 희귀품
+- fish tier
+- 대어
+- 65_gold 특수 물고기
+
+현재 v3.2는 그중 fish tier만 안전한 Postfix로 Luck 보정합니다.
+희귀 보상/실패율까지 한 번에 건드리지는 않습니다. 다음 확장 시 Makefish 내부 개별 판정만 transpiler로 좁게 패치할 수 있습니다.
+
+## 이미 Elin 자체에서 Luck을 쓰는 항목
+저주 판정은 ActEffect에서 이미 LUC × 5가 직접 들어갑니다.
+따라서 별도 Luck 패치를 넣지 않습니다. 이중 적용을 방지하기 위함입니다.
+
+## v3.1 유지 기능
+- SpawnLoot 좁은 transpiler
+  - 시체: 해부학+운
+  - 유전자
+  - 일반 소재
+  - 몬스터 고유 드롭
+  - 장비/소지품: Luck+크리티컬+처형자+오버킬
 - 범죄 목격 회피
-- 자물쇠 따기
+- 자물쇠
 - 낚시 품질
-- SkillAndLuckMatter 방식 활동 보너스
+- SkillAndLuckMatter 활동 보너스
 - 제작/가공 재료 환급
 - 카지노 순이익 보너스
 
-설정은 전부 한글이며 별도 설정창 없이 Mod Options/Mod Config GUI에서 조절합니다.
+전역 EClass.rnd/rndf, Card.Die, Card.Evalue, Thing.OnCreate, ThingGen.Create, ChildrenAndSelfWeight에는 패치하지 않습니다.
+
+설정은 한글이며 별도 설정창 없이 Mod Options/Mod Config GUI에서 조절합니다.
 호환: Elin EA 23.338 Patch 2

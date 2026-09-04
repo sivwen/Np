@@ -1,28 +1,28 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;
 namespace ElonaLuckForElin{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="2.0.3";
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="2.0.4";
 internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,NestLuck=null!,SeedLuck=null!,TreasureLuck=null!,ScratchLuck=null!,GachaLuck=null!,CasinoLuck=null!,CorpseLuck=null!,GeneLuck=null!,UniqueLootLuck=null!,CombatLootLuck=null!,GeneralMaterialLuck=null!,Log=null!;
 internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!,NestDiv=null!,NestCap=null!,SeedDiv=null!,SeedCap=null!,TreasureDiv=null!,TreasureCap=null!,TreasureMythDiv=null!,ScratchDiv=null!,ScratchCap=null!,GachaDiv=null!,GachaCap=null!,CasinoDiv=null!,CasinoCap=null!,AnatomySkillWeight=null!,AnatomyLuckWeight=null!,GeneBonusCap=null!,UniqueLootDiv=null!,UniqueLootCap=null!,CombatLuckDiv=null!,CombatLuckCap=null!,CritKillBonus=null!,FinishKillBonus=null!,ExecutionerBonus=null!,OverkillCap=null!,CombatTotalCap=null!;
 internal static Plugin I=null!; Harmony? h;
 void Awake(){I=this;
-Q=Config.Bind("엘로나식 운","장비 품질 운 적용",true,"엘로나식 장비 품질 1단계 상승을 적용합니다.");
-D=Config.Bind("엘로나식 운","Elin 전역 운 재굴림 제거",true,"Elin 기본 전역 운 재굴림을 제거합니다.");
+Q=Config.Bind("엘로나식 운","장비 품질 운 적용",false,"엘로나식 장비 품질 1단계 상승을 적용합니다.");
+D=Config.Bind("엘로나식 운","Elin 전역 운 재굴림 제거",false,"Elin 기본 전역 운 재굴림을 제거합니다.");
 QD=Config.Bind("엘로나식 운","장비 품질 판정 분모",5000,"엘로나 기본값은 5000입니다.");
-EC=Config.Bind("인챈트 운","인챈트 개수 운 적용",true,"운에 따라 랜덤 인챈트 개수를 늘립니다.");
+EC=Config.Bind("인챈트 운","인챈트 개수 운 적용",false,"운에 따라 랜덤 인챈트 개수를 늘립니다.");
 CountDiv=Config.Bind("인챈트 운","인챈트 개수 운 분모",250,"운이 이 수치만큼 오를 때마다 추가 인챈트 확률이 1% 증가합니다.");
 CountCap=Config.Bind("인챈트 운","인챈트 개수 확률 상한",35,"추가 인챈트 1회 판정의 최대 확률입니다.");
-ET=Config.Bind("인챈트 운","인챈트 등급 운 적용",true,"운에 따라 추가 인챈트의 가상 생성 레벨을 높입니다.");
+ET=Config.Bind("인챈트 운","인챈트 등급 운 적용",false,"운에 따라 추가 인챈트의 가상 생성 레벨을 높입니다.");
 TierDiv=Config.Bind("인챈트 운","인챈트 등급 운 분모",20,"운을 이 값으로 나눈 만큼 생성 레벨에 더합니다.");
 TierCap=Config.Bind("인챈트 운","인챈트 등급 레벨 보너스 상한",150,"운으로 얻을 수 있는 생성 레벨 보너스 상한입니다.");
-EV=Config.Bind("인챈트 운","인챈트 수치 운 적용",true,"새로 생성되는 랜덤 인챈트의 수치를 운으로 강화합니다.");
+EV=Config.Bind("인챈트 운","인챈트 수치 운 적용",false,"새로 생성되는 랜덤 인챈트의 수치를 운으로 강화합니다.");
 ValueDiv=Config.Bind("인챈트 운","인챈트 수치 운 분모",2000,"운을 이 값으로 나눈 비율만큼 인챈트 수치가 증가합니다. 상한 적용 전 기준 운 2000은 +100%입니다.");
 ValueCap=Config.Bind("인챈트 운","인챈트 수치 보너스 상한",50,"인챈트 수치 증가율의 최대값입니다.");
 Drop=Config.Bind("드롭 운","드롭 운 전체 사용",true,"몬스터 드롭 운 보정 전체를 켜거나 끕니다. 피규어와 박제에는 적용되지 않습니다.");
 DropDiv=Config.Bind("드롭 운","일반 소재 운 분모",50,"운이 이 수치만큼 오를 때마다 일반 몬스터 소재의 상대 드롭 확률이 1% 증가합니다.");
 DropCap=Config.Bind("드롭 운","일반 소재 보너스 상한",100,"일반 몬스터 소재의 상대 드롭 확률 증가 상한입니다.");
 GeneralMaterialLuck=Config.Bind("드롭 운","일반 소재 드롭 운",true,"송곳니, 가죽, 내장, 심장, 기계 부품 등 일반 소재 드롭에 운을 적용합니다.");
-CorpseLuck=Config.Bind("드롭 운","시체 해부학+운",true,"시체 관련 판정에서 운이 해부학을 보조하도록 합니다.");
+CorpseLuck=Config.Bind("드롭 운","시체 해부학+운",false,"시체 관련 판정에서 운이 해부학을 보조하도록 합니다.");
 GeneLuck=Config.Bind("드롭 운","유전자 해부학+운",true,"해부학과 운을 함께 사용해 유전자 드롭 확률을 높입니다.");
 AnatomySkillWeight=Config.Bind("드롭 운","해부학 가중치",3,"시체/유전자 판정에서 해부학(290)의 가중치입니다.");
 AnatomyLuckWeight=Config.Bind("드롭 운","운 가중치",2,"시체/유전자 판정에서 운의 가중치입니다.");
@@ -38,7 +38,7 @@ FinishKillBonus=Config.Bind("드롭 운","Finish 처치 보너스",100,"Finish �
 ExecutionerBonus=Config.Bind("드롭 운","처형자 레벨당 보너스",25,"처형자 특성(1420) 1레벨당 적용할 상대 드롭 보너스입니다.");
 OverkillCap=Config.Bind("드롭 운","오버킬 보너스 상한",100,"대상 최대 HP 대비 오버킬 비율에서 얻는 상대 드롭 보너스 상한입니다.");
 CombatTotalCap=Config.Bind("드롭 운","전투 드롭 총 보너스 상한",300,"운·크리티컬·Finish·처형자·오버킬을 합친 전투 드롭 보너스 상한입니다.");
-StealWeight=Config.Bind("훔치기 운","훔치기 중량 제한 운 우회",true,"운에 따라 훔치기 중량 제한을 확률적으로 무시합니다.");
+StealWeight=Config.Bind("훔치기 운","훔치기 중량 제한 운 우회",false,"운에 따라 훔치기 중량 제한을 확률적으로 무시합니다.");
 StealDiv=Config.Bind("훔치기 운","중량 우회 운 분모",20,"초과 중량 보정 전 기본 우회 확률은 운/이 값(%)입니다.");
 StealCap=Config.Bind("훔치기 운","중량 우회 확률 상한",75,"초과 중량 보정 전 우회 확률 상한입니다.");
 WitnessLuck=Config.Bind("범죄/발각 운","범죄 목격 회피 운",true,"훔치기 등 플레이어 범죄를 목격자가 놓칠 확률에 운을 적용합니다.");
@@ -50,7 +50,7 @@ LockCap=Config.Bind("자물쇠 운","자물쇠 레벨 감소 상한",100,"유효
 FishLuck=Config.Bind("낚시 운","낚시 품질 운",true,"운에 따라 잡은 물고기의 등급을 1단계 올립니다.");
 FishDiv=Config.Bind("낚시 운","낚시 품질 운 분모",25,"물고기 등급 상승 확률은 운/이 값(%)입니다.");
 FishCap=Config.Bind("낚시 운","낚시 품질 확률 상한",50,"물고기 등급 상승 확률 상한입니다.");
-DismantleLuck=Config.Bind("수확/해체 운","해체 회수 운",true,"해체 시 소수점 재료 회수 확률을 운으로 높입니다.");
+DismantleLuck=Config.Bind("수확/해체 운","해체 회수 운",false,"해체 시 소수점 재료 회수 확률을 운으로 높입니다.");
 DismantleDiv=Config.Bind("수확/해체 운","해체 회수 운 분모",50,"운이 이 수치만큼 오를 때마다 소수점 재료의 유효 회수 확률이 1% 증가합니다.");
 DismantleCap=Config.Bind("수확/해체 운","해체 회수 보너스 상한",100,"해체 소수점 재료 회수 보너스 상한입니다.");
 ActivityBonus=Config.Bind("SkillAndLuckMatter 대체","활동 보너스 롤 사용",true,"SkillAndLuckMatter 방식의 활동 보너스 롤을 사용합니다.");
@@ -64,17 +64,17 @@ ActSkillWeight=Config.Bind("SkillAndLuckMatter 대체","스킬 가중치",3,"원
 ActLuckWeight=Config.Bind("SkillAndLuckMatter 대체","운 가중치",2,"원본 모드의 기본 운 가중치입니다.");
 ActSkillMod=Config.Bind("SkillAndLuckMatter 대체","스킬 배율",100,"원본 모드의 기본 배율은 100%입니다.");
 ActLuckMod=Config.Bind("SkillAndLuckMatter 대체","운 배율",100,"원본 모드의 기본 배율은 100%입니다.");
-NestLuck=Config.Bind("희귀 결과 운","수정란 운 적용",true,"새 둥지에서 수정란이 나올 확률에 운을 적용합니다.");
+NestLuck=Config.Bind("희귀 결과 운","수정란 운 적용",false,"새 둥지에서 수정란이 나올 확률에 운을 적용합니다.");
 NestDiv=Config.Bind("희귀 결과 운","수정란 운 분모",50,"수정란 추가 판정 확률은 운/이 값(%)입니다.");
 NestCap=Config.Bind("희귀 결과 운","수정란 추가 확률 상한",40,"수정란 추가 판정 확률 상한입니다.");
-SeedLuck=Config.Bind("희귀 결과 운","씨앗 회수 운",true,"수동 수확의 씨앗 회수 판정에 운을 적용합니다.");
+SeedLuck=Config.Bind("희귀 결과 운","씨앗 회수 운",false,"수동 수확의 씨앗 회수 판정에 운을 적용합니다.");
 SeedDiv=Config.Bind("희귀 결과 운","씨앗 회수 운 분모",50,"운이 이 수치만큼 오를 때마다 씨앗 회수 판정 강도가 약 1% 증가합니다.");
 SeedCap=Config.Bind("희귀 결과 운","씨앗 회수 보너스 상한",200,"씨앗 회수 판정 강도 보너스 상한입니다.");
-TreasureLuck=Config.Bind("희귀 결과 운","보물상자 희귀도 운",true,"보물상자에서 생성되는 장비 희귀도에 운을 적용합니다.");
+TreasureLuck=Config.Bind("희귀 결과 운","보물상자 희귀도 운",false,"보물상자에서 생성되는 장비 희귀도에 운을 적용합니다.");
 TreasureDiv=Config.Bind("희귀 결과 운","레전더리 운 분모",50,"운/이 값만큼 보물상자 희귀도 판정값을 낮춥니다.");
 TreasureCap=Config.Bind("희귀 결과 운","레전더리 판정 감소 상한",50,"0~99 보물상자 희귀도 판정값의 최대 감소량입니다.");
 TreasureMythDiv=Config.Bind("희귀 결과 운","미시컬 운 분모",500,"운이 이 수치만큼 오를 때마다 미시컬 1/N의 N이 1 감소하며 최소 N은 5입니다.");
-ScratchLuck=Config.Bind("희귀 결과 운","스크래치 당첨 운",true,"스크래치의 상위 보상 당첨 판정에 운을 적용합니다.");
+ScratchLuck=Config.Bind("희귀 결과 운","스크래치 당첨 운",false,"스크래치의 상위 보상 당첨 판정에 운을 적용합니다.");
 ScratchDiv=Config.Bind("희귀 결과 운","스크래치 운 분모",50,"운이 이 수치만큼 오를 때마다 스크래치 유효 당첨 확률이 1% 증가합니다.");
 ScratchCap=Config.Bind("희귀 결과 운","스크래치 보너스 상한",150,"스크래치 유효 당첨 확률 보너스 상한입니다.");
 GachaLuck=Config.Bind("가챠 운","가챠 Best-of 운",true,"캐릭터/아이템 가챠에서 운에 따라 후보를 추가로 뽑고 가장 좋은 결과를 선택합니다.");
@@ -86,7 +86,7 @@ CasinoCap=Config.Bind("카지노 운","카지노 보너스 확률 상한",50,"�
 Craft=Config.Bind("호환성","제작 장비에도 적용",false,"제작 장비에도 장비 운 보정을 적용합니다.");
 Ammo=Config.Bind("호환성","탄약 포함",false,"탄약에도 장비 운 보정을 적용합니다.");
 Log=Config.Bind("진단","디버그 로그",false,"운 보정 발생 내용을 로그에 기록합니다.");
-h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" loaded. 신규 ThingGen.Create 생성 중에만 장비 품질/인챈트 운 패치를 적용합니다.");}
+h=new Harmony(G);h.PatchAll();Logger.LogInfo(N+" "+V+" Safe Hotfix loaded. 전역 고빈도 Harmony 패치를 제거한 진단/안정화 빌드입니다.");}
 void OnDestroy(){h?.UnpatchSelf();}
 internal static int Luck(){int l=EClass.pc==null?1:EClass.pc.Evalue(78);if(l<1)l=1;if(l>9999)l=9999;return l;}
 internal static bool Eligible(Thing x){return x.IsEquipmentOrRangedOrAmmo&&(!x.IsAmmo||Ammo.Value)&&(x.bp==null||!x.bp.isCraft||Craft.Value)&&(x.sourceCard==null||x.sourceCard.quality==0)&&!x.HasTag(CTAG.noRandomEnc);}
@@ -105,29 +105,6 @@ internal static int BonusRolls(int skill,bool crafting=false){
 double p=BonusChance(ActivityScore(skill));if(crafting)p/=10.0;int n=(int)Math.Floor(p);double f=p-n;if(f>0&&EClass.rnd(100000)<(int)(f*100000.0))n++;return n;
 }
 }
-static class ItemGenerationContext{
-[ThreadStatic] internal static int depth;
-internal static bool Active=>depth>0;
-}
-[HarmonyPatch(typeof(Thing),nameof(Thing.OnCreate),new Type[]{typeof(int)})]static class ThingCreateLuckPatch{
-public sealed class Snap{public readonly Dictionary<int,int>B=new();}
-static void Prefix(Thing __instance,out Snap? __state){
-__state=null;
-if(!ItemGenerationContext.Active)return;
-__state=new Snap();
-if(__instance.elements!=null)foreach(var kv in __instance.elements.dict)__state.B[kv.Key]=kv.Value.vBase;
-}
-static void Postfix(Thing __instance,int genLv,Snap? __state){
-if(__state==null||!ItemGenerationContext.Active)return;
-var x=__instance;if(!Plugin.Eligible(x))return;int luck=Plugin.Luck();
-var touched=new List<Element>();if(x.elements!=null)foreach(var kv in x.elements.dict){int old=__state.B.TryGetValue(kv.Key,out var v)?v:0;if(kv.Value.vBase!=old)touched.Add(kv.Value);}
-if(Plugin.EV.Value){int pct=Math.Min(Plugin.ValueCap.Value,Math.Max(0,luck*100/Math.Max(1,Plugin.ValueDiv.Value)));if(pct>0)foreach(var e in touched){int add=Math.Abs(e.vBase)*pct/100;if(add<1&&e.vBase!=0)add=1;x.elements.ModBase(e.id,e.vBase>=0?add:-add);}}
-if(Plugin.EC.Value){int chance=Math.Min(Plugin.CountCap.Value,Math.Max(0,luck/Math.Max(1,Plugin.CountDiv.Value)));int rolls=1+luck/2500;if(rolls>4)rolls=4;int lv=genLv;if(Plugin.ET.Value)lv+=Math.Min(Plugin.TierCap.Value,Math.Max(0,luck/Math.Max(1,Plugin.TierDiv.Value)));for(int i=0;i<rolls;i++){if(chance>0&&EClass.rnd(100)<chance){var e=x.AddEnchant(lv);if(e!=null&&Plugin.EV.Value){int pct=Math.Min(Plugin.ValueCap.Value,Math.Max(0,luck*100/Math.Max(1,Plugin.ValueDiv.Value)));int add=Math.Abs(e.vBase)*pct/100;if(add<1&&e.vBase!=0)add=1;x.elements.ModBase(e.id,e.vBase>=0?add:-add);}}}}
-if(Plugin.Q.Value){var a=x.rarity;if(a>=Rarity.Crude&&a<Rarity.Mythical){int d=Math.Max(1,Plugin.QD.Value);if(luck>=d||EClass.rnd(d)<luck){Rarity b=a switch{Rarity.Crude=>Rarity.Normal,Rarity.Normal=>Rarity.Superior,Rarity.Superior=>Rarity.Legendary,Rarity.Legendary=>Rarity.Mythical,_=>a};if(b!=a){x.rarity=b;x.ApplyMaterial(true);x.ApplyMaterial(false);Plugin.Info($"Luck {luck}: {x.id} rarity {a}->{b}");}}}}
-}}
-[HarmonyPatch(typeof(Dice),nameof(Dice.Roll),new Type[]{typeof(int),typeof(int),typeof(int),typeof(Card)})]static class DicePatch{static void Prefix(ref Card? card){if(Plugin.D.Value)card=null;}}
-
-
 static class DeathLootContext{
 [ThreadStatic] internal static Card? victim;
 [ThreadStatic] internal static Card? origin;
@@ -177,24 +154,6 @@ static void Prefix(Card __instance,Card origin,AttackSource attackSource){
 }
 static Exception? Finalizer(Exception? __exception){
  DeathLootContext.victim=null;DeathLootContext.origin=null;DeathLootContext.attackSource=AttackSource.None;DeathLootContext.critical=false;DeathLootContext.overkillPct=0;return __exception;
-}
-}
-
-[HarmonyPatch(typeof(Card),nameof(Card.Evalue),new Type[]{typeof(int)})]static class AnatomyLuckEvaluePatch{
-static void Postfix(Card __instance,int ele,ref int __result){
- if(!Plugin.Drop.Value||!Plugin.CorpseLuck.Value||!DeathLootContext.active||ele!=290||DeathLootContext.origin!=__instance)return;
- int mix=DeathLootContext.AnatomyComposite(__instance);if(mix>__result)__result=mix;
-}
-}
-
-[HarmonyPatch(typeof(ThingGen),nameof(ThingGen.Create),new Type[]{typeof(string),typeof(int),typeof(int)})]static class ThingGenerationAndLootTrackerPatch{
-static void Prefix(){ItemGenerationContext.depth++;}
-static void Postfix(string id){
- if(DeathLootContext.active&&DeathLootContext.createdIds!=null&&!string.IsNullOrEmpty(id))DeathLootContext.createdIds.Add(id);
-}
-static Exception? Finalizer(Exception? __exception){
- if(ItemGenerationContext.depth>0)ItemGenerationContext.depth--;
- return __exception;
 }
 }
 
@@ -272,18 +231,6 @@ static Exception? Finalizer(Exception? __exception){
  DeathLootContext.active=false;DeathLootContext.geneCreated=false;DeathLootContext.createdIds=null;DeathLootContext.heldBefore=null;return __exception;
 }
 }
-[HarmonyPatch(typeof(Card),"get_ChildrenAndSelfWeight")]static class StealWeightLuckPatch{
-static readonly HashSet<int> passed=new HashSet<int>();
-static void Postfix(Card __instance,ref int __result){
-if(!Plugin.StealWeight.Value||__result<=0||EClass.pc==null)return;
-bool inSteal=false;var st=new StackTrace(1,false);var fs=st.GetFrames();if(fs!=null)for(int i=0;i<fs.Length&&i<12;i++){var m=fs[i].GetMethod();var dn=m?.DeclaringType?.FullName??"";var n=m?.Name??"";if(dn.Contains("AI_Steal")&&(n.Contains("Run")||n.Contains("b__")||n=="MoveNext")){inSteal=true;break;}}
-if(!inSteal)return;
-int limit=EClass.pc.Evalue(281)*200+EClass.pc.STR*100+1000;if(__result<=limit)return;
-if(passed.Contains(__instance.uid)){__result=0;return;}
-int luck=Plugin.Luck();int chance=Math.Min(Plugin.StealCap.Value,Math.Max(0,luck/Math.Max(1,Plugin.StealDiv.Value)));if(chance<=0)return;
-chance=(int)((long)chance*Math.Max(1,limit)/Math.Max(1,__result));if(chance<1)chance=1;
-if(EClass.rnd(100)<chance){passed.Add(__instance.uid);__result=0;Plugin.Info($"Luck {luck}: bypassed steal weight limit for uid {__instance.uid} ({chance}%)");}
-}}
 [HarmonyPatch(typeof(Point),nameof(Point.TryWitnessCrime),new Type[]{typeof(Chara),typeof(Chara),typeof(int),typeof(Func<Chara,bool>)})]static class WitnessLuckPatch{
 static void Prefix(Chara criminal,ref Func<Chara,bool> funcWitness){
 if(!Plugin.WitnessLuck.Value||criminal==null||EClass.pc==null||criminal!=EClass.pc)return;
@@ -310,16 +257,6 @@ int chance=Math.Min(Plugin.FishCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plu
 if(EClass.rnd(100)<chance){int before=__result.tier;__result.SetTier(Math.Min(3,before+1));Plugin.Info($"Luck {Plugin.Luck()}: fishing tier {before}->{__result.tier}");}
 }}
 
-[HarmonyPatch(typeof(TaskHarvest),nameof(TaskHarvest.HarvestThing),new Type[]{})]static class DismantleContextPatch{
-static void Prefix(){if(Plugin.DismantleLuck.Value)RareOutcomeContext.dismantleDepth++;}
-static Exception? Finalizer(Exception? __exception){if(Plugin.DismantleLuck.Value&&RareOutcomeContext.dismantleDepth>0)RareOutcomeContext.dismantleDepth--;return __exception;}
-}
-[HarmonyPatch(typeof(EClass),nameof(EClass.rndf),new Type[]{typeof(float)})]static class DismantleLuckPatch{
-static void Prefix(ref float a){
-if(!Plugin.DismantleLuck.Value||a<=1f||RareOutcomeContext.dismantleDepth<=0)return;
-int bonus=Math.Min(Plugin.DismantleCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.DismantleDiv.Value)));if(bonus<=0)return;
-a=Math.Max(1f,a*100f/(100f+bonus));
-}}
 [HarmonyPatch(typeof(Map),nameof(Map.TrySmoothPick),new Type[]{typeof(Point),typeof(Thing),typeof(Chara)})]static class ActivityDropBonusPatch{
 static void Prefix(Thing t,Chara c){
 if(!Plugin.ActivityEnabled()||t==null||c==null||!c.IsPC)return;
@@ -363,59 +300,6 @@ static class RareOutcomeContext{
 [ThreadStatic] internal static int treasureDepth;
 [ThreadStatic] internal static int nestDepth;
 internal static int PercentBonus(ConfigEntry<int> div,ConfigEntry<int> cap){return Math.Min(Math.Max(0,cap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,div.Value)));}
-}
-
-[HarmonyPatch(typeof(GrowSystem),nameof(GrowSystem.TryPopSeed),new Type[]{typeof(Chara)})]static class SeedLuckContextPatch{
-static void Prefix(){if(Plugin.SeedLuck.Value){RareOutcomeContext.seedDepth++;RareOutcomeContext.seedRndIndex=0;}}
-static Exception? Finalizer(Exception? __exception){if(Plugin.SeedLuck.Value&&RareOutcomeContext.seedDepth>0)RareOutcomeContext.seedDepth--;return __exception;}
-}
-
-[HarmonyPatch(typeof(ThingGen),nameof(ThingGen.CreateTreasureContent),new Type[]{typeof(Thing),typeof(int),typeof(TreasureType),typeof(bool)})]static class TreasureLuckContextPatch{
-static void Prefix(){if(Plugin.TreasureLuck.Value)RareOutcomeContext.treasureDepth++;}
-static Exception? Finalizer(Exception? __exception){if(Plugin.TreasureLuck.Value&&RareOutcomeContext.treasureDepth>0)RareOutcomeContext.treasureDepth--;return __exception;}
-}
-[HarmonyPatch(typeof(SurvivalManager),nameof(SurvivalManager.OnMineWreck),new Type[]{typeof(Point)})]static class NestLuckContextPatch{
-static void Prefix(){if(Plugin.NestLuck.Value)RareOutcomeContext.nestDepth++;}
-static Exception? Finalizer(Exception? __exception){if(Plugin.NestLuck.Value&&RareOutcomeContext.nestDepth>0)RareOutcomeContext.nestDepth--;return __exception;}
-}
-[HarmonyPatch(typeof(EClass),nameof(EClass.rnd),new Type[]{typeof(int)})]static class RareOutcomeRndPatch{
-static void Prefix(ref int a){
-if(a<=1)return;
-var fs=new StackTrace(1,false).GetFrames();if(fs==null)return;
-bool scratch=false,treasureSet=false;
-for(int i=0;i<fs.Length&&i<8;i++){
- var m=fs[i].GetMethod();string dn=m?.DeclaringType?.FullName??"";string n=m?.Name??"";
- if(Plugin.ScratchLuck.Value&&dn.Contains("TraitCrafter")&&n.Contains("g__Prize"))scratch=true;
- if(Plugin.TreasureLuck.Value&&RareOutcomeContext.treasureDepth>0&&dn.Contains("ThingGen")&&n.Contains("g__SetRarity"))treasureSet=true;
-}
-if(Plugin.NestLuck.Value&&RareOutcomeContext.nestDepth>0&&a==10){
- int bonus=RareOutcomeContext.PercentBonus(Plugin.NestDiv,Plugin.NestCap);
- if(bonus>0){int na=(int)(((long)a*100+99+bonus)/(100+bonus));if(na<2)na=2;a=na;}
- return;
-}
-if(scratch){
- int bonus=RareOutcomeContext.PercentBonus(Plugin.ScratchDiv,Plugin.ScratchCap);
- if(bonus>0){int na=(int)(((long)a*100+99+bonus)/(100+bonus));if(na<1)na=1;if(na<a)a=na;}return;
-}
-if(treasureSet&&a==20){
- int cut=Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.TreasureMythDiv.Value));a=Math.Max(5,a-cut);return;
-}
-if(Plugin.SeedLuck.Value&&RareOutcomeContext.seedDepth>0){
- RareOutcomeContext.seedRndIndex++;
- if(RareOutcomeContext.seedRndIndex==1){
-   int bonus=RareOutcomeContext.PercentBonus(Plugin.SeedDiv,Plugin.SeedCap);
-   if(bonus>0){int na=(int)(((long)a*100+99+bonus)/(100+bonus));if(na<1)na=1;a=na;}
- }
-}
-}
-static void Postfix(int a,ref int __result){
-if(!Plugin.TreasureLuck.Value||RareOutcomeContext.treasureDepth<=0||a!=100)return;
-var fs=new StackTrace(1,false).GetFrames();if(fs==null)return;
-for(int i=0;i<fs.Length&&i<10;i++){var m=fs[i].GetMethod();string dn=m?.DeclaringType?.FullName??"";string n=m?.Name??"";if(dn.Contains("ThingGen")&&n.Contains("g__SetRarity")){
- int cut=Math.Min(Math.Max(0,Plugin.TreasureCap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.TreasureDiv.Value)));
- __result=Math.Max(0,__result-cut);return;
-}}
-}
 }
 
 static class GachaLuckCore{

@@ -3,7 +3,7 @@ using System.Reflection.Emit;
 namespace HarmonyLib{
  public sealed class Harmony{public Harmony(string id){}public void PatchAll(){}public void UnpatchSelf(){}}
  [AttributeUsage(AttributeTargets.Class|AttributeTargets.Method,AllowMultiple=true)]
- public sealed class HarmonyPatch:Attribute{
+ public sealed class HarmonyPatch:Attribute{public HarmonyPatch(){}
   public HarmonyPatch(Type t,string n){}
   public HarmonyPatch(Type t,string n,Type[] a){}
  }

@@ -1,9 +1,9 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;
 namespace ElonaLuckForElin{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="1.6.0";
-internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,NestLuck=null!,SeedLuck=null!,TreasureLuck=null!,ScratchLuck=null!,Log=null!;
-internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!,NestDiv=null!,NestCap=null!,SeedDiv=null!,SeedCap=null!,TreasureDiv=null!,TreasureCap=null!,TreasureMythDiv=null!,ScratchDiv=null!,ScratchCap=null!;
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="1.7.0";
+internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,NestLuck=null!,SeedLuck=null!,TreasureLuck=null!,ScratchLuck=null!,GachaLuck=null!,CasinoLuck=null!,Log=null!;
+internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!,NestDiv=null!,NestCap=null!,SeedDiv=null!,SeedCap=null!,TreasureDiv=null!,TreasureCap=null!,TreasureMythDiv=null!,ScratchDiv=null!,ScratchCap=null!,GachaDiv=null!,GachaCap=null!,CasinoDiv=null!,CasinoCap=null!;
 internal static Plugin I=null!; Harmony? h;
 void Awake(){I=this;
 Q=Config.Bind("Elona Luck","EnableEquipmentQualityLuck",true,"Elona-style one-tier equipment quality upgrade.");
@@ -60,6 +60,12 @@ TreasureMythDiv=Config.Bind("Rare Outcome Luck","TreasureMythicalLuckDivisor",50
 ScratchLuck=Config.Bind("Rare Outcome Luck","EnableScratchPrizeLuck",true,"Luck improves high-tier scratch prize checks.");
 ScratchDiv=Config.Bind("Rare Outcome Luck","ScratchLuckDivisor",50,"Each divisor Luck adds 1% effective chance to scratch prize checks.");
 ScratchCap=Config.Bind("Rare Outcome Luck","ScratchChanceBonusCapPercent",150,"Maximum effective scratch prize chance bonus.");
+GachaLuck=Config.Bind("Gacha Luck","EnableGachaBestOfLuck",true,"Luck adds best-of candidate rolls to character and item gacha.");
+GachaDiv=Config.Bind("Gacha Luck","GachaLuckPerExtraCandidate",500,"Each divisor Luck adds one extra candidate.");
+GachaCap=Config.Bind("Gacha Luck","GachaExtraCandidateCap",5,"Maximum extra candidates.");
+CasinoLuck=Config.Bind("Casino Luck","EnableCasinoPayoutLuck",true,"Luck can grant a bonus on positive net casino winnings at minigame settlement.");
+CasinoDiv=Config.Bind("Casino Luck","CasinoBonusChanceLuckDivisor",25,"Bonus payout chance is Luck/divisor percent.");
+CasinoCap=Config.Bind("Casino Luck","CasinoBonusChanceCapPercent",50,"Maximum bonus payout chance.");
 Craft=Config.Bind("Compatibility","ApplyToCraftedEquipment",false,"Include crafted equipment.");
 Ammo=Config.Bind("Compatibility","IncludeAmmo",false,"Include ammo.");
 Log=Config.Bind("Diagnostics","DebugLogging",false,"Log Luck upgrades.");
@@ -236,5 +242,33 @@ for(int i=0;i<fs.Length&&i<10;i++){var m=fs[i].GetMethod();string dn=m?.Declarin
 }}
 }
 }
+
+static class GachaLuckCore{
+[ThreadStatic] internal static bool rerolling;
+internal static int Extra(){return Math.Min(Math.Max(0,Plugin.GachaCap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.GachaDiv.Value)));}
+internal static long Score(CardRow r){if(r==null)return long.MinValue;long v=0;try{v=((long)r.LV*100000L)-Math.Max(1,r.chance);}catch{}try{var st=r as SourceThing.Row;if(st!=null)v+=(long)st.value*100L;}catch{}return v;}
+internal static long Score(Chara c){if(c==null||c.source==null)return long.MinValue;long q=c.source.quality;long lv=c.source.LV;long ch=Math.Max(1,c.source.chance);return q*1000000000L+lv*100000L-ch;}
+}
+
+[HarmonyPatch(typeof(SpawnList),nameof(SpawnList.Select),new Type[]{typeof(int),typeof(int)})]static class ItemGachaBestOfPatch{
+static void Postfix(SpawnList __instance,ref CardRow __result){
+if(!Plugin.GachaLuck.Value||GachaLuckCore.rerolling||__result==null)return;
+var fs=new StackTrace(1,false).GetFrames();bool ctx=false;if(fs!=null)for(int i=0;i<fs.Length&&i<12;i++){string dn=fs[i].GetMethod()?.DeclaringType?.FullName??"";if(dn.Contains("TraitGachaBall")){ctx=true;break;}}
+if(!ctx)return;int extra=GachaLuckCore.Extra();if(extra<=0)return;
+GachaLuckCore.rerolling=true;try{CardRow best=__result;long score=GachaLuckCore.Score(best);for(int i=0;i<extra;i++){CardRow r=__instance.Select();long sc=GachaLuckCore.Score(r);if(sc>score){best=r;score=sc;}}__result=best;}finally{GachaLuckCore.rerolling=false;}
+}}
+
+[HarmonyPatch(typeof(LayerGachaResult),nameof(LayerGachaResult.Draw),new Type[]{typeof(string)})]static class CharaGachaBestOfPatch{
+static void Postfix(string id,ref Chara __result){
+if(!Plugin.GachaLuck.Value||GachaLuckCore.rerolling||__result==null)return;int extra=GachaLuckCore.Extra();if(extra<=0)return;
+GachaLuckCore.rerolling=true;try{Chara best=__result;long score=GachaLuckCore.Score(best);for(int i=0;i<extra;i++){Chara c=LayerGachaResult.Draw(id);long sc=GachaLuckCore.Score(c);if(sc>score){if(best!=__result)best.Destroy();best=c;score=sc;}else c?.Destroy();}__result=best;}finally{GachaLuckCore.rerolling=false;}
+}}
+
+[HarmonyPatch(typeof(MiniGame),nameof(MiniGame.Deactivate),new Type[]{})]static class CasinoLuckSettlementPatch{
+static void Prefix(MiniGame __instance){
+if(!Plugin.CasinoLuck.Value||__instance==null||__instance.balance==null||__instance.balance.changeCoin<=0)return;
+int chance=Math.Min(Plugin.CasinoCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.CasinoDiv.Value)));if(chance<=0)return;
+if(EClass.rnd(100)<chance){int bonus=Math.Max(1,__instance.balance.changeCoin/2);__instance.balance.changeCoin+=bonus;Plugin.Info($"Casino Luck bonus +{bonus}");}
+}}
 
 }

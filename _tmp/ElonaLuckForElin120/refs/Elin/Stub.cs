@@ -23,3 +23,4 @@ public class RecipeCard:Recipe{public override Thing Craft(BlessedState blessed,
 public static class EClass{public static Chara pc=new Chara();public static int rnd(int a)=>0;public static float rndf(float a)=>0f;}
 public static class Dice{public static long Roll(int n,int s,int b=0,Card c=null)=>0;}
 public static class CTAG{public const string noRandomEnc="noRandomEnc";}
+public class GrowSystem{public Thing TryPopSeed(Chara c)=>null;}

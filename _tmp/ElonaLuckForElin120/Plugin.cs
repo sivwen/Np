@@ -1,9 +1,9 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;
 namespace ElonaLuckForElin{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="2.0.0";
-internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,NestLuck=null!,SeedLuck=null!,TreasureLuck=null!,ScratchLuck=null!,GachaLuck=null!,CasinoLuck=null!,Log=null!;
-internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!,NestDiv=null!,NestCap=null!,SeedDiv=null!,SeedCap=null!,TreasureDiv=null!,TreasureCap=null!,TreasureMythDiv=null!,ScratchDiv=null!,ScratchCap=null!,GachaDiv=null!,GachaCap=null!,CasinoDiv=null!,CasinoCap=null!;
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="2.0.1";
+internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,NestLuck=null!,SeedLuck=null!,TreasureLuck=null!,ScratchLuck=null!,GachaLuck=null!,CasinoLuck=null!,CorpseLuck=null!,GeneLuck=null!,UniqueLootLuck=null!,CombatLootLuck=null!,GeneralMaterialLuck=null!,Log=null!;
+internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!,NestDiv=null!,NestCap=null!,SeedDiv=null!,SeedCap=null!,TreasureDiv=null!,TreasureCap=null!,TreasureMythDiv=null!,ScratchDiv=null!,ScratchCap=null!,GachaDiv=null!,GachaCap=null!,CasinoDiv=null!,CasinoCap=null!,AnatomySkillWeight=null!,AnatomyLuckWeight=null!,GeneBonusCap=null!,UniqueLootDiv=null!,UniqueLootCap=null!,CombatLuckDiv=null!,CombatLuckCap=null!,CritKillBonus=null!,FinishKillBonus=null!,ExecutionerBonus=null!,OverkillCap=null!,CombatTotalCap=null!;
 internal static Plugin I=null!; Harmony? h;
 void Awake(){I=this;
 Q=Config.Bind("Elona Luck","EnableEquipmentQualityLuck",true,"Elona-style one-tier equipment quality upgrade.");
@@ -18,9 +18,26 @@ TierCap=Config.Bind("Enchant Luck","EnchantTierLevelBonusCap",150,"Maximum virtu
 EV=Config.Bind("Enchant Luck","EnableEnchantValueLuck",true,"Luck boosts newly generated random enchant values.");
 ValueDiv=Config.Bind("Enchant Luck","EnchantValueLuckDivisor",2000,"Luck/divisor is fractional value bonus; 2000 Luck = +100% before cap.");
 ValueCap=Config.Bind("Enchant Luck","EnchantValueBonusCapPercent",50,"Maximum enchant-value bonus percent.");
-Drop=Config.Bind("Drop Luck","EnableGeneralDropLuck",true,"Luck improves common SpawnLoot chance() checks.");
-DropDiv=Config.Bind("Drop Luck","DropLuckPerPercentDivisor",50,"Each divisor points of Luck adds 1% effective drop-rate bonus.");
-DropCap=Config.Bind("Drop Luck","DropRateBonusCapPercent",100,"Maximum effective drop-rate bonus.");
+Drop=Config.Bind("Drop Luck","EnableGeneralDropLuck",true,"Master switch for monster-drop Luck extensions. Does not affect figures or taxidermy.");
+DropDiv=Config.Bind("Drop Luck","GeneralMaterialLuckDivisor",50,"Each divisor Luck adds 1% relative chance to common monster-material drops.");
+DropCap=Config.Bind("Drop Luck","GeneralMaterialBonusCapPercent",100,"Maximum relative bonus to common monster-material drops.");
+GeneralMaterialLuck=Config.Bind("Drop Luck","EnableGeneralMaterialLuck",true,"Luck affects fang/skin/offal/heart/machine parts and similar common materials.");
+CorpseLuck=Config.Bind("Drop Luck","EnableCorpseAnatomyLuck",true,"Luck can supplement Anatomy for corpse-related Anatomy calculations.");
+GeneLuck=Config.Bind("Drop Luck","EnableGeneAnatomyLuck",true,"Anatomy and Luck together improve gene-drop chance.");
+AnatomySkillWeight=Config.Bind("Drop Luck","AnatomySkillWeight",3,"Weight of Anatomy (skill 290) in corpse/gene composite.");
+AnatomyLuckWeight=Config.Bind("Drop Luck","AnatomyLuckWeight",2,"Weight of Luck in corpse/gene composite.");
+GeneBonusCap=Config.Bind("Drop Luck","GeneRelativeBonusCapPercent",300,"Maximum relative bonus to gene drop chance from Anatomy+Luck.");
+UniqueLootLuck=Config.Bind("Drop Luck","EnableUniqueMonsterLootLuck",true,"Luck improves sourceCard/race unique drops such as monster-specific rare loot and artifacts.");
+UniqueLootDiv=Config.Bind("Drop Luck","UniqueLootLuckDivisor",10,"Each divisor Luck adds 1% relative chance to unique monster loot.");
+UniqueLootCap=Config.Bind("Drop Luck","UniqueLootRelativeBonusCapPercent",300,"Maximum relative bonus to unique monster loot.");
+CombatLootLuck=Config.Bind("Drop Luck","EnableCombatFinishLootLuck",true,"Held-item/equipment drops can improve from Luck plus kill quality.");
+CombatLuckDiv=Config.Bind("Drop Luck","CombatLootLuckDivisor",10,"Each divisor Luck adds 1% relative held-item/equipment drop chance.");
+CombatLuckCap=Config.Bind("Drop Luck","CombatLuckContributionCapPercent",100,"Maximum Luck contribution to combat-loot bonus.");
+CritKillBonus=Config.Bind("Drop Luck","CriticalKillBonusPercent",50,"Relative drop bonus when the killing attack was critical.");
+FinishKillBonus=Config.Bind("Drop Luck","FinishKillBonusPercent",100,"Relative drop bonus for AttackSource.Finish kills.");
+ExecutionerBonus=Config.Bind("Drop Luck","ExecutionerPerLevelBonusPercent",25,"Relative bonus per Executioner feat level (1420).");
+OverkillCap=Config.Bind("Drop Luck","OverkillBonusCapPercent",100,"Maximum relative bonus from overkill percent of target MaxHP.");
+CombatTotalCap=Config.Bind("Drop Luck","CombatLootTotalBonusCapPercent",300,"Maximum combined Luck/critical/Finish/Executioner/overkill bonus.");
 StealWeight=Config.Bind("Steal Luck","EnableStealWeightBypassLuck",true,"Luck can bypass stealing weight limit.");
 StealDiv=Config.Bind("Steal Luck","StealWeightLuckDivisor",20,"Base bypass chance is Luck/divisor percent before overweight penalty.");
 StealCap=Config.Bind("Steal Luck","StealWeightBypassCapPercent",75,"Maximum bypass chance before overweight penalty.");
@@ -100,17 +117,146 @@ if(Plugin.Q.Value){var a=x.rarity;if(a>=Rarity.Crude&&a<Rarity.Mythical){int d=M
 }}
 [HarmonyPatch(typeof(Dice),nameof(Dice.Roll),new Type[]{typeof(int),typeof(int),typeof(int),typeof(Card)})]static class DicePatch{static void Prefix(ref Card? card){if(Plugin.D.Value)card=null;}}
 
-[HarmonyPatch(typeof(Card),nameof(Card.SpawnLoot),new Type[]{typeof(Card)})]static class SpawnLootLuckContextPatch{
-static void Prefix(){RareOutcomeContext.lootDepth++;}
-static Exception? Finalizer(Exception? __exception){if(RareOutcomeContext.lootDepth>0)RareOutcomeContext.lootDepth--;return __exception;}
+
+static class DeathLootContext{
+[ThreadStatic] internal static Card? victim;
+[ThreadStatic] internal static Card? origin;
+[ThreadStatic] internal static AttackSource attackSource;
+[ThreadStatic] internal static bool critical;
+[ThreadStatic] internal static int overkillPct;
+[ThreadStatic] internal static bool active;
+[ThreadStatic] internal static bool geneCreated;
+[ThreadStatic] internal static HashSet<string>? createdIds;
+[ThreadStatic] internal static List<Thing>? heldBefore;
+
+internal static int AnatomyComposite(Card? killer){
+ if(killer==null)return 0;int skill=Math.Max(0,killer.Evalue(290));int luck=Plugin.Luck();
+ int sw=Math.Max(0,Plugin.AnatomySkillWeight.Value),lw=Math.Max(0,Plugin.AnatomyLuckWeight.Value),den=sw+lw;
+ if(den<=0)return skill;int mix=(skill*sw+luck*lw)/den;return Math.Max(skill,mix);
+}
+internal static double IncrementalChance(double baseP,int relativeBonusPct){
+ if(baseP<=0||baseP>=1||relativeBonusPct<=0)return 0;
+ double target=Math.Min(0.95,baseP*(1.0+relativeBonusPct/100.0));
+ if(target<=baseP)return 0;return (target-baseP)/(1.0-baseP);
+}
+internal static bool Roll(double p){if(p<=0)return false;if(p>=1)return true;return EClass.rnd(1000000)<(int)(p*1000000.0);}
+internal static Point DropPoint(Card v){Point p=v.GetRootCard().pos;if(p.IsBlocked)p=p.GetNearestPoint()??p;return p;}
+internal static void DropThing(Thing t,Card v){
+ if(t==null)return;t.isHidden=false;t.isNPCProperty=false;t.SetInt(116);EClass._zone.AddCard(t,DropPoint(v));
+}
+internal static void TryBonusCreated(string id,int denom,int relativePct,Card v){
+ if(denom<=1||relativePct<=0||createdIds==null||createdIds.Contains(id))return;
+ double q=IncrementalChance(1.0/denom,relativePct);if(!Roll(q))return;
+ Thing t=ThingGen.Create(id,-1,v.LV);DropThing(t,v);createdIds.Add(id);Plugin.Info($"Drop Luck: bonus {id}");
+}
+internal static int CombatBonus(Card killer){
+ int b=Math.Min(Math.Max(0,Plugin.CombatLuckCap.Value),Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.CombatLuckDiv.Value)));
+ if(critical)b+=Math.Max(0,Plugin.CritKillBonus.Value);
+ if(attackSource==AttackSource.Finish)b+=Math.Max(0,Plugin.FinishKillBonus.Value);
+ b+=Math.Min(100,Math.Max(0,killer.Evalue(1420)*Math.Max(0,Plugin.ExecutionerBonus.Value)));
+ b+=Math.Min(Math.Max(0,Plugin.OverkillCap.Value),Math.Max(0,overkillPct));
+ return Math.Min(Math.Max(0,Plugin.CombatTotalCap.Value),b);
+}
 }
 
-[HarmonyPatch(typeof(EClass),nameof(EClass.rnd),new Type[]{typeof(int)})]static class DropChanceLuckPatch{
-static void Prefix(ref int a){
-if(!Plugin.Drop.Value||a<=1||RareOutcomeContext.lootDepth<=0)return;
-int luck=Plugin.Luck();int bonus=Math.Min(Plugin.DropCap.Value,Math.Max(0,luck/Math.Max(1,Plugin.DropDiv.Value)));if(bonus<=0)return;
-long v=(long)a*100L;int na=(int)((v+99+bonus)/(100+bonus));if(na<1)na=1;if(na<a)a=na;
-}}
+[HarmonyPatch(typeof(Card),nameof(Card.Die),new Type[]{typeof(Element),typeof(Card),typeof(AttackSource),typeof(Chara)})]static class DeathLootSignalPatch{
+static void Prefix(Card __instance,Card origin,AttackSource attackSource){
+ DeathLootContext.victim=__instance;DeathLootContext.origin=origin;DeathLootContext.attackSource=attackSource;
+ DeathLootContext.critical=AttackProcess.Current!=null&&AttackProcess.Current.TC==__instance&&AttackProcess.Current.CC==origin&&AttackProcess.Current.crit;
+ int mh=Math.Max(1,__instance.MaxHP);DeathLootContext.overkillPct=Math.Min(500,Math.Max(0,-__instance.hp*100/mh));
+}
+static Exception? Finalizer(Exception? __exception){
+ DeathLootContext.victim=null;DeathLootContext.origin=null;DeathLootContext.attackSource=AttackSource.None;DeathLootContext.critical=false;DeathLootContext.overkillPct=0;return __exception;
+}
+}
+
+[HarmonyPatch(typeof(Card),nameof(Card.Evalue),new Type[]{typeof(int)})]static class AnatomyLuckEvaluePatch{
+static void Postfix(Card __instance,int ele,ref int __result){
+ if(!Plugin.Drop.Value||!Plugin.CorpseLuck.Value||!DeathLootContext.active||ele!=290||DeathLootContext.origin!=__instance)return;
+ int mix=DeathLootContext.AnatomyComposite(__instance);if(mix>__result)__result=mix;
+}
+}
+
+[HarmonyPatch(typeof(ThingGen),nameof(ThingGen.Create),new Type[]{typeof(string),typeof(int),typeof(int)})]static class LootCreatedTrackerPatch{
+static void Postfix(string id){
+ if(DeathLootContext.active&&DeathLootContext.createdIds!=null&&!string.IsNullOrEmpty(id))DeathLootContext.createdIds.Add(id);
+}
+}
+
+[HarmonyPatch(typeof(Chara),nameof(Chara.MakeGene),new Type[]{typeof(Nullable<DNA.Type>)})]static class GeneCreatedTrackerPatch{
+static void Postfix(){
+ if(DeathLootContext.active)DeathLootContext.geneCreated=true;
+}
+}
+
+[HarmonyPatch(typeof(Card),nameof(Card.SpawnLoot),new Type[]{typeof(Card)})]static class SpawnLootRebalancedPatch{
+static void Prefix(Card __instance,Card origin){
+ DeathLootContext.active=true;DeathLootContext.geneCreated=false;
+ DeathLootContext.createdIds=new HashSet<string>();DeathLootContext.heldBefore=new List<Thing>();
+ foreach(Thing t in __instance.things)if(t!=null)DeathLootContext.heldBefore.Add(t);
+}
+static void Postfix(Card __instance,Card origin){
+ if(!Plugin.Drop.Value||!__instance.isChara)return;
+ var made=DeathLootContext.createdIds??new HashSet<string>();int luck=Plugin.Luck();
+
+ if(Plugin.GeneralMaterialLuck.Value){
+   int rel=Math.Min(Math.Max(0,Plugin.DropCap.Value),Math.Max(0,luck/Math.Max(1,Plugin.DropDiv.Value)));
+   if(__instance.Chara.IsMachine){
+     bool scrap=__instance.Chara.HasElement(1248);
+     DeathLootContext.TryBonusCreated("memory_chip",200,rel,__instance);
+     DeathLootContext.TryBonusCreated(scrap?"scrap":"microchip",20,rel,__instance);
+     DeathLootContext.TryBonusCreated(scrap?"bolt":"battery",15,rel,__instance);
+   }else{
+     if(__instance.Chara.IsAnimal){
+       DeathLootContext.TryBonusCreated("fang",15,rel,__instance);
+       DeathLootContext.TryBonusCreated("skin",10,rel,__instance);
+     }
+     DeathLootContext.TryBonusCreated("offal",20,rel,__instance);
+     DeathLootContext.TryBonusCreated("heart",20,rel,__instance);
+   }
+   switch(__instance.id){
+     case "golem_wood":DeathLootContext.TryBonusCreated("crystal_earth",30,rel,__instance);break;
+     case "golem_fish":case "golem_stone":DeathLootContext.TryBonusCreated("crystal_sun",30,rel,__instance);break;
+     case "golem_steel":DeathLootContext.TryBonusCreated("crystal_mana",30,rel,__instance);break;
+   }
+ }
+
+ if(Plugin.GeneLuck.Value&&!DeathLootContext.geneCreated&&origin!=null&&!__instance.IsPCFaction){
+   int comp=DeathLootContext.AnatomyComposite(origin);
+   int rel=Math.Min(Math.Max(0,Plugin.GeneBonusCap.Value),Math.Max(0,comp));
+   double q=DeathLootContext.IncrementalChance(1.0/200.0,rel);
+   if(DeathLootContext.Roll(q)){Thing g=__instance.Chara.MakeGene();DeathLootContext.DropThing(g,__instance);DeathLootContext.geneCreated=true;Plugin.Info($"Gene Luck: anatomy/luck composite {comp}");}
+ }
+
+ if(Plugin.UniqueLootLuck.Value&&!__instance.IsPCFaction){
+   int rel=Math.Min(Math.Max(0,Plugin.UniqueLootCap.Value),Math.Max(0,luck/Math.Max(1,Plugin.UniqueLootDiv.Value)));
+   Action<string> tryEntry=(string entry)=>{
+     if(string.IsNullOrEmpty(entry))return;string[] p=entry.Split('/');if(p.Length<2)return;
+     if(!int.TryParse(p[1],out int n)||n<=0||n>=1000)return;string id=p[0];if(made.Contains(id))return;
+     double q=DeathLootContext.IncrementalChance(n/1000.0,rel);if(!DeathLootContext.Roll(q))return;
+     Thing t=ThingGen.Create(id,-1,__instance.LV);DeathLootContext.DropThing(t,__instance);made.Add(id);Plugin.Info($"Unique Loot Luck: {id}");
+   };
+   if(__instance.sourceCard!=null&&__instance.sourceCard.loot!=null)foreach(string e in __instance.sourceCard.loot)tryEntry(e);
+   if(__instance.Chara.race!=null&&__instance.Chara.race.loot!=null)foreach(string e in __instance.Chara.race.loot)tryEntry(e);
+ }
+
+ if(Plugin.CombatLootLuck.Value&&origin!=null&&DeathLootContext.heldBefore!=null){
+   int rel=DeathLootContext.CombatBonus(origin);
+   foreach(Thing item in DeathLootContext.heldBefore){
+     if(item==null||item.parent!=__instance||item.isGifted||item.rarity>=Rarity.Artifact||item.HasTag(CTAG.gift)||item.trait is TraitChestMerchant)continue;
+     double baseP;
+     if(item.trait!=null&&item.trait.DropChance>0f)baseP=Math.Min(0.95,item.trait.DropChance);
+     else if(item.IsEquipmentOrRanged)baseP=(item.rarity>=Rarity.Legendary)?0.05:0.01;
+     else baseP=0.20;
+     double q=DeathLootContext.IncrementalChance(baseP,rel);
+     if(DeathLootContext.Roll(q)){DeathLootContext.DropThing(item,__instance);Plugin.Info($"Combat Loot: {item.id}, bonus {rel}%");}
+   }
+ }
+}
+static Exception? Finalizer(Exception? __exception){
+ DeathLootContext.active=false;DeathLootContext.geneCreated=false;DeathLootContext.createdIds=null;DeathLootContext.heldBefore=null;return __exception;
+}
+}
 [HarmonyPatch(typeof(Card),"get_ChildrenAndSelfWeight")]static class StealWeightLuckPatch{
 static readonly HashSet<int> passed=new HashSet<int>();
 static void Postfix(Card __instance,ref int __result){

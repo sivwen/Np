@@ -1,9 +1,9 @@
 using BepInEx;using BepInEx.Configuration;using HarmonyLib;using System;using System.Collections.Generic;using System.Diagnostics;
 namespace ElonaLuckForElin{
 [BepInPlugin(G,N,V)]public sealed class Plugin:BaseUnityPlugin{
-public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="1.4.0";
-internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,Log=null!;
-internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!;
+public const string G="sivwen.elin.elonaluck",N="Elona Luck for Elin",V="1.5.0";
+internal static ConfigEntry<bool>Q=null!,D=null!,EC=null!,ET=null!,EV=null!,Craft=null!,Ammo=null!,Drop=null!,StealWeight=null!,WitnessLuck=null!,LockLuck=null!,FishLuck=null!,DismantleLuck=null!,ActivityBonus=null!,BonusMine=null!,BonusDig=null!,BonusHarvest=null!,BonusFish=null!,BonusCraft=null!,AutoDisableSALM=null!,Log=null!;
+internal static ConfigEntry<int>QD=null!,CountDiv=null!,CountCap=null!,TierDiv=null!,TierCap=null!,ValueDiv=null!,ValueCap=null!,DropDiv=null!,DropCap=null!,StealDiv=null!,StealCap=null!,WitnessDiv=null!,WitnessCap=null!,LockDiv=null!,LockCap=null!,FishDiv=null!,FishCap=null!,DismantleDiv=null!,DismantleCap=null!,ActSkillWeight=null!,ActLuckWeight=null!,ActSkillMod=null!,ActLuckMod=null!;
 internal static Plugin I=null!; Harmony? h;
 void Awake(){I=this;
 Q=Config.Bind("Elona Luck","EnableEquipmentQualityLuck",true,"Elona-style one-tier equipment quality upgrade.");
@@ -36,6 +36,17 @@ FishCap=Config.Bind("Fishing Luck","FishingTierChanceCapPercent",50,"Maximum fis
 DismantleLuck=Config.Bind("Harvest Luck","EnableDismantleYieldLuck",true,"Luck improves fractional dismantle material recovery.");
 DismantleDiv=Config.Bind("Harvest Luck","DismantleYieldLuckDivisor",50,"Each divisor Luck adds 1% effective fractional recovery chance.");
 DismantleCap=Config.Bind("Harvest Luck","DismantleYieldBonusCapPercent",100,"Maximum effective fractional recovery bonus.");
+ActivityBonus=Config.Bind("SkillAndLuckMatter Replacement","EnableActivityBonusRolls",true,"Enable SkillAndLuckMatter-style activity bonus rolls.");
+BonusMine=Config.Bind("SkillAndLuckMatter Replacement","BonusMining",true,"Apply bonus rolls to mining.");
+BonusDig=Config.Bind("SkillAndLuckMatter Replacement","BonusDigging",true,"Apply bonus rolls to digging.");
+BonusHarvest=Config.Bind("SkillAndLuckMatter Replacement","BonusHarvestGatherReap",true,"Apply bonus rolls to harvesting/gathering/reaping/chopping.");
+BonusFish=Config.Bind("SkillAndLuckMatter Replacement","BonusFishing",true,"Apply bonus rolls to fishing.");
+BonusCraft=Config.Bind("SkillAndLuckMatter Replacement","BonusCraftingProcessing",true,"Refund crafting materials using the SkillAndLuckMatter curve.");
+AutoDisableSALM=Config.Bind("SkillAndLuckMatter Replacement","AutoDisableWhenOriginalDetected",true,"Disable replacement bonus rolls when original SkillAndLuckMatter assembly is loaded, preventing double rewards.");
+ActSkillWeight=Config.Bind("SkillAndLuckMatter Replacement","SkillWeight",3,"Original default skill weight.");
+ActLuckWeight=Config.Bind("SkillAndLuckMatter Replacement","LuckWeight",2,"Original default luck weight.");
+ActSkillMod=Config.Bind("SkillAndLuckMatter Replacement","SkillLevelModifierPercent",100,"Original default modifier: 100%.");
+ActLuckMod=Config.Bind("SkillAndLuckMatter Replacement","LuckLevelModifierPercent",100,"Original default modifier: 100%.");
 Craft=Config.Bind("Compatibility","ApplyToCraftedEquipment",false,"Include crafted equipment.");
 Ammo=Config.Bind("Compatibility","IncludeAmmo",false,"Include ammo.");
 Log=Config.Bind("Diagnostics","DebugLogging",false,"Log Luck upgrades.");
@@ -44,6 +55,19 @@ void OnDestroy(){h?.UnpatchSelf();}
 internal static int Luck(){int l=EClass.pc==null?1:EClass.pc.Evalue(78);if(l<1)l=1;if(l>9999)l=9999;return l;}
 internal static bool Eligible(Thing x){return x.IsEquipmentOrRangedOrAmmo&&(!x.IsAmmo||Ammo.Value)&&(x.bp==null||!x.bp.isCraft||Craft.Value)&&(x.sourceCard==null||x.sourceCard.quality==0)&&!x.HasTag(CTAG.noRandomEnc);}
 internal static void Info(string s){if(Log.Value)I.Logger.LogInfo(s);}
+internal static bool OriginalSALMLoaded(){foreach(var a in AppDomain.CurrentDomain.GetAssemblies()){string n=a.GetName().Name??"";if(n.IndexOf("SkillAndLuckMatter",StringComparison.OrdinalIgnoreCase)>=0)return true;}return false;}
+internal static bool ActivityEnabled(){return ActivityBonus.Value&&(!AutoDisableSALM.Value||!OriginalSALMLoaded());}
+internal static double ActivityScore(int skill){
+int sw=Math.Max(0,ActSkillWeight.Value),lw=Math.Max(0,ActLuckWeight.Value);int den=sw+lw;if(den<=0)return 0;
+double sv=Math.Max(0,skill)*(Math.Max(0,ActSkillMod.Value)/100.0);double lv=Luck()*(Math.Max(0,ActLuckMod.Value)/100.0);
+return (sv*sw+lv*lw)/den;
+}
+internal static double BonusChance(double x){
+if(x<=0)return 0;if(x<10)return x/10.0*0.15;if(x<40)return 0.15+(x-10)/30.0*0.35;if(x<100)return 0.50+(x-40)/60.0*0.25;if(x<200)return 0.75+(x-100)/100.0*0.25;return 1.0+(x-200)/100.0;
+}
+internal static int BonusRolls(int skill,bool crafting=false){
+double p=BonusChance(ActivityScore(skill));if(crafting)p/=10.0;int n=(int)Math.Floor(p);double f=p-n;if(f>0&&EClass.rnd(100000)<(int)(f*100000.0))n++;return n;
+}
 }
 [HarmonyPatch(typeof(Thing),nameof(Thing.OnCreate),new Type[]{typeof(int)})]static class ThingCreateLuckPatch{
 public sealed class Snap{public readonly Dictionary<int,int>B=new();}
@@ -114,4 +138,39 @@ if(!ok)return;
 int bonus=Math.Min(Plugin.DismantleCap.Value,Math.Max(0,Plugin.Luck()/Math.Max(1,Plugin.DismantleDiv.Value)));if(bonus<=0)return;
 a=Math.Max(1f,a*100f/(100f+bonus));
 }}
+[HarmonyPatch(typeof(Map),nameof(Map.TrySmoothPick),new Type[]{typeof(Point),typeof(Thing),typeof(Chara)})]static class ActivityDropBonusPatch{
+static void Prefix(Thing t,Chara c){
+if(!Plugin.ActivityEnabled()||t==null||c==null||!c.IsPC)return;
+var fs=new StackTrace(1,false).GetFrames();if(fs==null)return;int skill=-1;bool enabled=false;
+for(int i=0;i<fs.Length&&i<14;i++){string dn=fs[i].GetMethod()?.DeclaringType?.FullName??"";
+if(dn.Contains("TaskMine")){skill=220;enabled=Plugin.BonusMine.Value;break;}
+if(dn.Contains("TaskDig")){skill=230;enabled=Plugin.BonusDig.Value;break;}
+if(dn.Contains("TaskChopWood")){skill=225;enabled=Plugin.BonusHarvest.Value;break;}
+if(dn.Contains("TaskHarvest")||dn.Contains("GrowSystem")){skill=Math.Max(c.Evalue(250),c.Evalue(286));enabled=Plugin.BonusHarvest.Value;break;}}
+if(!enabled||skill<0)return;int rolls=Plugin.BonusRolls(skill);if(rolls<=0)return;int baseNum=Math.Max(1,t.Num);t.ModNum(baseNum*rolls);Plugin.Info($"Activity bonus x{rolls}: {t.id}");
+}}
+
+[HarmonyPatch(typeof(AI_Fish),nameof(AI_Fish.Makefish),new Type[]{typeof(Chara)})]static class ActivityFishingBonusPatch{
+static void Postfix(Chara c,ref Thing __result){
+if(!Plugin.ActivityEnabled()||!Plugin.BonusFish.Value||c==null||!c.IsPC||__result==null)return;
+int rolls=Plugin.BonusRolls(c.Evalue(245));if(rolls<=0)return;int baseNum=Math.Max(1,__result.Num);__result.ModNum(baseNum*rolls);Plugin.Info($"Fishing activity bonus x{rolls}: {__result.id}");
+}}
+
+static class CraftRefundCore{
+internal static List<Thing>? Prepare(Recipe r,List<Thing> ings,bool model){
+if(!Plugin.ActivityEnabled()||!Plugin.BonusCraft.Value||model||r==null||ings==null||EClass.pc==null)return null;
+Element e=r.source?.GetReqSkill();int skill=e==null?0:EClass.pc.Evalue(e.id);int rolls=Plugin.BonusRolls(skill,true);if(rolls<=0)return null;
+var list=new List<Thing>();foreach(var ing in ings){if(ing==null)continue;int n=Math.Max(1,ing.Num)*rolls;Thing d=ing.Duplicate(n);if(d!=null)list.Add(d);}return list;
+}
+internal static void Refund(List<Thing>? list){if(list==null||EClass.pc==null)return;foreach(var t in list)EClass.pc.AddCard(t);Plugin.Info($"Crafting material refund: {list.Count} stacks");}
+}
+[HarmonyPatch(typeof(Recipe),nameof(Recipe.Craft),new Type[]{typeof(BlessedState),typeof(bool),typeof(List<Thing>),typeof(TraitCrafter),typeof(bool)})]static class RecipeCraftRefundPatch{
+static void Prefix(Recipe __instance,List<Thing> ings,bool model,out List<Thing>? __state){__state=CraftRefundCore.Prepare(__instance,ings,model);}
+static void Postfix(List<Thing>? __state,Thing __result){if(__result!=null)CraftRefundCore.Refund(__state);}
+}
+[HarmonyPatch(typeof(RecipeCard),nameof(RecipeCard.Craft),new Type[]{typeof(BlessedState),typeof(bool),typeof(List<Thing>),typeof(TraitCrafter),typeof(bool)})]static class RecipeCardCraftRefundPatch{
+static void Prefix(RecipeCard __instance,List<Thing> ings,bool model,out List<Thing>? __state){__state=CraftRefundCore.Prepare(__instance,ings,model);}
+static void Postfix(List<Thing>? __state,Thing __result){if(__result!=null)CraftRefundCore.Refund(__state);}
+}
+
 }

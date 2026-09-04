@@ -12,7 +12,7 @@ public class ElementContainer{public Dictionary<int,Element> dict=new Dictionary
 public class CardRow{public string id="";public int LV;public int chance=1;}
 public class SourceThing{public class Row:CardRow{public int value;}}
 public class SourceChara{public class Row:CardRow{public int quality;}}
-public class Card{public CardBlueprint bp=new CardBlueprint();public SourceCard sourceCard=new SourceCard();public Category category=new Category();public Rarity rarity;public string id="";public int uid;public int c_lockLv;public virtual int Evalue(int id)=>0;public int ChildrenAndSelfWeight=>0;public virtual void Destroy(){}}
+public class Card{public CardBlueprint bp=new CardBlueprint();public SourceCard sourceCard=new SourceCard();public Category category=new Category();public Rarity rarity;public string id="";public int uid;public int c_lockLv;public virtual int Evalue(int id)=>0;public int ChildrenAndSelfWeight=>0;public virtual void Destroy(){}public void SpawnLoot(Card origin){}}
 public class Thing:Card{public bool IsEquipmentOrRangedOrAmmo=>true;public bool IsAmmo=>false;public bool IsEquipmentOrRanged=>true;public bool IsCursed=>false;public TagList tags=new TagList();public ElementContainer elements=new ElementContainer();public int tier;public int Num=1;public virtual void OnCreate(int genLv){}public virtual void ApplyMaterial(bool remove=false){}public Element AddEnchant(int lv=-1)=>new Element();public bool HasTag(string s)=>false;public void SetTier(int t){tier=t;}public void ModNum(int a,bool notify=true){Num+=a;}public Thing Duplicate(int n){return new Thing{Num=n,id=id};}}
 public class Chara:Card{public bool IsPC=>true;public bool IsPCParty=>true;public int STR;public SourceChara.Row source=new SourceChara.Row();public Card AddCard(Card c)=>c;}
 public class Trait{public Card owner=new Card();public virtual LockOpenState TryOpenLock(Chara c,bool msgFail=true)=>LockOpenState.Fail;}
@@ -30,3 +30,8 @@ public static class EClass{public static Chara pc=new Chara();public static int 
 public static class Dice{public static long Roll(int n,int s,int b=0,Card c=null)=>0;}
 public static class CTAG{public const string noRandomEnc="noRandomEnc";}
 public class GrowSystem{public Thing TryPopSeed(Chara c)=>null;}
+
+public class TaskHarvest{public void HarvestThing(){}}
+public enum TreasureType{RandomChest,BossNefia}
+public static class ThingGen{public static void CreateTreasureContent(Thing t,int lv,TreasureType type,bool clearContent){}}
+public class SurvivalManager{public bool OnMineWreck(Point p)=>false;}

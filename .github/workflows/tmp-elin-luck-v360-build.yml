@@ -2,9 +2,10 @@ name: tmp-elin-luck-v360-build
 on:
   push:
     branches: ["tmp-elin-elona-luck-v360-20260905"]
+    paths-ignore:
+      - '_tmp/ElonaLuckForElinV3/**'
 jobs:
   build:
-    if: ${{ github.event.head_commit.message != 'Apply v3.6 crafting refund' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -16,8 +17,8 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Apply v3.6 source changes
-        shell: python
         run: |
+          python3 <<'PY'
           from pathlib import Path
           root=Path('_tmp/ElonaLuckForElinV3')
           p=root/'Plugin.cs'
@@ -26,58 +27,25 @@ jobs:
           anchor='        PatchClass("작물 직접 수확",typeof(HarvestActivityPatch));'
           if 'CraftRefundPatch' not in s:
               s=s.replace(anchor,anchor+'\n        PatchClass("제작 재료 환급",typeof(CraftRefundPatch));')
-              block=r'''
-
-[HarmonyPatch(typeof(LayerCraft),nameof(LayerCraft.GetReqIngredient),new Type[]{typeof(int)})]
-static class CraftRefundPatch
-{
-    static ConfigEntry<bool>? Enabled;
-    static ConfigEntry<int>? RefundCap;
-    static bool Prepare()
-    {
-        Enabled=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작/가공 재료 환급",true,"실제 제작 소비 단계에서만 스킬+운에 따라 일부 재료 소비를 줄입니다. UI 필요량과 제작 가능 판정은 원본 그대로입니다.");
-        RefundCap=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작 재료 환급률 상한",50,"재료 1개당 환급 확률의 상한(%)입니다. 안전을 위해 최소 1개는 항상 소비합니다.");
-        return true;
-    }
-    static void Postfix(LayerCraft __instance,int index,ref int __result)
-    {
-        if(Enabled==null||!Enabled.Value||__result<=1||EClass.pc==null||__instance==null||__instance.recipe==null)return;
-        Element req=__instance.recipe.source?.GetReqSkill();
-        int skill=req==null?0:EClass.pc.Evalue(req.id);
-        double chance=Plugin.ActivityCurve(Plugin.ActivityScore(skill))/10.0;
-        chance=Math.Min(Math.Max(0,RefundCap?.Value??50)/100.0,Math.Max(0, chance));
-        if(chance<=0)return;
-        int saved=0;
-        int maxSave=__result-1;
-        int threshold=(int)(chance*100000.0);
-        for(int i=0;i<maxSave;i++)if(EClass.rnd(100000)<threshold)saved++;
-        if(saved>0)__result=Math.Max(1,__result-saved);
-    }
-}
-'''
+              block='''\n\n[HarmonyPatch(typeof(LayerCraft),nameof(LayerCraft.GetReqIngredient),new Type[]{typeof(int)})]\nstatic class CraftRefundPatch\n{\n    static ConfigEntry<bool>? Enabled;\n    static ConfigEntry<int>? RefundCap;\n    static bool Prepare()\n    {\n        Enabled=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작/가공 재료 환급",true,"실제 제작 소비 단계에서만 스킬+운에 따라 일부 재료 소비를 줄입니다. UI 필요량과 제작 가능 판정은 원본 그대로입니다.");\n        RefundCap=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작 재료 환급률 상한",50,"재료 1개당 환급 확률의 상한(%)입니다. 안전을 위해 최소 1개는 항상 소비합니다.");\n        return true;\n    }\n    static void Postfix(LayerCraft __instance,int index,ref int __result)\n    {\n        if(Enabled==null||!Enabled.Value||__result<=1||EClass.pc==null||__instance==null||__instance.recipe==null)return;\n        Element req=__instance.recipe.source?.GetReqSkill();\n        int skill=req==null?0:EClass.pc.Evalue(req.id);\n        double chance=Plugin.ActivityCurve(Plugin.ActivityScore(skill))/10.0;\n        chance=Math.Min(Math.Max(0,RefundCap?.Value??50)/100.0,Math.Max(0,chance));\n        if(chance<=0)return;\n        int saved=0;\n        int maxSave=__result-1;\n        int threshold=(int)(chance*100000.0);\n        for(int i=0;i<maxSave;i++)if(EClass.rnd(100000)<threshold)saved++;\n        if(saved>0)__result=Math.Max(1,__result-saved);\n    }\n}\n'''
               pos=s.rfind('\n}')
               s=s[:pos]+block+s[pos:]
           p.write_text(s)
-
           cs=root/'ElonaLuckForElinV3.csproj'
-          t=cs.read_text().replace('<Version>3.5.0</Version>','<Version>3.6.0</Version>')
-          cs.write_text(t)
-
+          cs.write_text(cs.read_text().replace('<Version>3.5.0</Version>','<Version>3.6.0</Version>'))
           pkg=root/'package.xml'
-          t=pkg.read_text().replace('Elona Luck for Elin v3.5','Elona Luck for Elin v3.6').replace('v3.5 안전 구조','v3.6 안전 구조')
-          pkg.write_text(t)
-
+          pkg.write_text(pkg.read_text().replace('Elona Luck for Elin v3.5','Elona Luck for Elin v3.6'))
           rd=root/'README_KR.md'
           t=rd.read_text().replace('# Elona Luck for Elin v3.5','# Elona Luck for Elin v3.6')
           if '## 제작/가공 재료 환급' not in t:
-              t += '''\n\n## 제작/가공 재료 환급\n- 실제 소비 경로 `AI_UseCrafter -> layer.GetReqIngredient() -> Thing.Split()`를 확인하고 복원했습니다.\n- `Recipe.Craft()`나 재료 전체 스택을 복제하지 않습니다.\n- UI 표시와 제작 가능 판정은 원래 필요량을 그대로 요구합니다.\n- 실제 제작 시작 시 소비되는 수량만 Skill:Luck = 3:2 활동 점수와 기존 곡선의 1/10 확률로 절약합니다.\n- 재료 단위마다 독립적으로 랜덤 판정합니다.\n- 기본 환급 확률 상한 50%, 최소 1개는 항상 소비합니다.\n- 따라서 필요량 1개인 재료에는 안전상 환급이 발생하지 않습니다.\n\n낚시 희귀 보상은 Makefish 내부의 복합 RNG/결과 덮어쓰기 구조 때문에 이번 배치에서는 추가하지 않았습니다.\n'''
+              t += '\n\n## 제작/가공 재료 환급\n- AI_UseCrafter가 실제로 소비할 수량을 받는 LayerCraft.GetReqIngredient()만 보정합니다.\n- UI 필요량과 제작 가능 판정은 원본 그대로입니다.\n- Skill:Luck = 3:2 활동 점수와 기존 곡선의 1/10 확률로 재료 단위별 절약 판정을 합니다.\n- 기본 환급률 상한 50%, 최소 1개는 항상 소비합니다.\n- Recipe.Craft, 재료 전체 스택 복제, 전역 Thing.Split/Destroy는 패치하지 않습니다.\n- 낚시 희귀 보상은 이번 안정 배치에서 보류합니다.\n'
           rd.write_text(t)
-
           st=root/'refs/Elin/Stub.cs'
           t=st.read_text()
           if 'public class LayerCraft' not in t:
-              t += '''\npublic class Element{public int id;}\npublic class RecipeSource{public Element GetReqSkill()=>new Element();}\npublic class Recipe{public RecipeSource source=new RecipeSource();}\npublic class LayerCraft{public Recipe recipe=new Recipe();public int GetReqIngredient(int index)=>1;}\n'''
+              t += '\npublic class Element{public int id;}\npublic class RecipeSource{public Element GetReqSkill()=>new Element();}\npublic class Recipe{public RecipeSource source=new RecipeSource();}\npublic class LayerCraft{public Recipe recipe=new Recipe();public int GetReqIngredient(int index)=>1;}\n'
           st.write_text(t)
+          PY
       - name: Safety audit
         run: |
           SRC=_tmp/ElonaLuckForElinV3/Plugin.cs
@@ -88,7 +56,7 @@ static class CraftRefundPatch
           ! grep -F 'HarmonyPatch(typeof(Map),nameof(Map.TrySmoothPick)' "$SRC"
           grep -F 'HarmonyPatch(typeof(LayerCraft),nameof(LayerCraft.GetReqIngredient)' "$SRC"
       - run: dotnet build _tmp/ElonaLuckForElinV3/ElonaLuckForElinV3.csproj -c Release
-      - name: Commit source
+      - name: Commit v3.6 source
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com

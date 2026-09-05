@@ -250,7 +250,7 @@
     "/home/runner/.nuget/packages/": {}
   },
   "project": {
-    "version": "3.7.0",
+    "version": "3.8.0",
     "restore": {
       "projectUniqueName": "/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/ElonaLuckForElinV3.csproj",
       "projectName": "ElonaLuckForElin",

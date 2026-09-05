@@ -1,8 +1,9 @@
 using System;using System.Collections.Generic;
 public enum LockOpenState{Success,NotEnoughSkill,Fail}
 public enum BlessedState{Normal,Cursed,Doomed,Blessed}
-public enum Rarity{Normal,Superior,Legendary,Mythical,Artifact}
+public enum Rarity{Crude,Normal,Superior,Legendary,Mythical,Artifact}
 public enum TreasureType{Map,BossNefia,BossQuest,SurvivalRaid,RandomChest}
+public enum ShopType{None,Blackmarket,Exotic}
 public class Category{public bool IsChildOf(string s)=>false;}
 public class CardRow{public string[] loot=Array.Empty<string>();}
 public class SourceRace{public class Row{public string[] loot=Array.Empty<string>();}}
@@ -16,7 +17,7 @@ public class Card{
 }
 public class Thing:Card{public int tier;public int Num=1;public void SetTier(int t){tier=t;}public void ModNum(int n,bool notify=true){Num+=n;}public Thing Duplicate(int n)=>new Thing{Num=n,id=id};}
 public class Chara:Card{public int DEX;public int STR;public bool IsPCParty=>true;public bool IsMachine;public bool IsAnimal;public SourceRace.Row race=new SourceRace.Row();public override CardRow sourceCard=>new CardRow();public Card AddCard(Card c)=>c;public bool HasElement(int id)=>false;public Thing MakeGene()=>new Thing{id="gene"};}
-public class Trait{public Card owner=new Card();public virtual LockOpenState TryOpenLock(Chara c,bool msgFail=true)=>LockOpenState.Fail;}
+public class Trait{public Card owner=new Card();public virtual ShopType ShopType=>ShopType.None;public virtual LockOpenState TryOpenLock(Chara c,bool msgFail=true)=>LockOpenState.Fail;}
 public class TraitCrafter:Trait{}
 public class AI_Fish{public static Thing Makefish(Chara c)=>null;}
 public class AI_Steal{public bool Perform()=>true;}
@@ -28,6 +29,7 @@ public class AttackProcess{public static AttackProcess Current=new AttackProcess
 public class Zone{public Card AddCard(Card c,Point p)=>c;}
 public class ZoneEventManager{public void OnCharaDie(Chara c){}}
 public static class ThingGen{public static Thing Create(string id,int idMat=-1,int lv=-1)=>new Thing{id=id,LV=lv};public static void CreateTreasureContent(Thing t,int lv,TreasureType type,bool clearContent){}}
+public static class CardBlueprint{public static void SetRarity(Rarity q=Rarity.Normal){}}
 public static class EClass{public static Chara pc=new Chara();public static Zone _zone=new Zone();public static int rnd(int a)=>0;public static float rndf(float a)=>0f;}
 
 public class Element{public int id;}

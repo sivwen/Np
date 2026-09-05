@@ -20,7 +20,9 @@ public class Trait{public Card owner=new Card();public virtual LockOpenState Try
 public class TraitCrafter:Trait{}
 public class AI_Fish{public static Thing Makefish(Chara c)=>null;}
 public class AI_Steal{public bool Perform()=>true;}
-public class GrowSystem{public Thing TryPopSeed(Chara c)=>null;}
+public class TaskChopWood{}
+public class GrowSystem{public Thing TryPopSeed(Chara c)=>null;public void Harvest(Chara c){}}
+public class Map{public void TrySmoothPick(Point p,Thing t,Chara c){}public void MineBlock(Point p,bool recoverBlock=false,Chara c=null,bool mineObj=true){}public void MineFloor(Point p,Chara c=null,bool recoverBlock=false,bool removePlatform=true){}}
 public class MiniGame{public class Balance{public int changeCoin;}public Balance balance=new Balance();public void Deactivate(){}}
 public class AttackProcess{public static AttackProcess Current=new AttackProcess();public Card CC;public Card TC;public bool crit;}
 public class Zone{public Card AddCard(Card c,Point p)=>c;}

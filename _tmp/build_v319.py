@@ -29,11 +29,9 @@ binds='''        DeathLuckSource=Config.Bind("사망 후 보너스 드롭","사�
 if bind_anchor not in s: raise SystemExit('post-death bind anchor not found')
 s=s.replace(bind_anchor,binds,1)
 
-# Route general post-death bonus through direct attribution + chosen party Luck source.
 if 'BonusDropCore.Process(c);' not in s: raise SystemExit('BonusDropCore.Process call not found')
 s=s.replace('BonusDropCore.Process(c);','DeathLuckResolver.ProcessGeneralBonus(c);',1)
 
-# Replace v3.17 direct killer resolver with common resolver and selected Luck source.
 old='''    static bool ResolveKiller(Chara victim,out Chara? killer,out bool crit)\n    {\n        killer=null;crit=false;\n        var ap=AttackProcess.Current;\n        if(ap==null||ap.TC!=victim||ap.CC==null)return false;\n        killer=ap.CC.Chara;\n        if(killer==null||(!ap.CC.IsPCFaction&&!ap.CC.IsPCFactionOrMinion))return false;\n        crit=ap.crit;\n        return true;\n    }'''
 new='''    static bool ResolveKiller(Chara victim,out Chara? killer,out bool crit)\n        =>DeathLuckResolver.TryResolveDirect(victim,out killer,out crit);'''
 if old not in s: raise SystemExit('v3.17 ResolveKiller pattern not found')
@@ -114,3 +112,8 @@ p.write_text(s)
 cs=root/'ElonaLuckForElinV3.csproj';cs.write_text(cs.read_text().replace('<Version>3.17.0</Version>','<Version>3.19.0</Version>'))
 pkg=root/'package.xml';pkg.write_text(pkg.read_text().replace('Elona Luck for Elin v3.17','Elona Luck for Elin v3.19'))
 rd=root/'README_KR.md';t=rd.read_text().replace('# Elona Luck for Elin v3.17','# Elona Luck for Elin v3.19');t+='''\n\n## v3.19 Performance Safe\n- v3.18에서 추가했던 Card.DamageHP 최근 가해자 추적 Prefix를 완전히 제거했습니다. DamageHP는 전투/상태이상/환경 피해가 매우 자주 지나는 핵심 경로이므로 성능과 타 모드 호환성을 우선했습니다.\n- ConditionalWeakTable 기반 최근 가해자 기록, 환경/DOT TTL 설정, DamageHP PatchClass 등록도 모두 없습니다.\n- 사망 보너스 Luck 기준은 마지막가해자 / 파티최고 / 파티합산 설정을 그대로 유지합니다. 기본값은 파티최고입니다.\n- 파티합산은 중복 없는 현재 party.members + 플레이어 Luck을 합산하고 별도 상한을 적용합니다.\n- 직접 처치 귀속은 AttackProcess.Current가 정확히 사망한 victim(TC)과 PC 진영 attacker(CC)를 가리킬 때만 인정합니다.\n- 환경사/DOT/비전투 사망은 최근 가해자를 억지로 추적하지 않습니다. AttackProcess가 이미 끊긴 경우 보너스를 지급하지 않는 fail-closed 정책입니다.\n- Card.Die/SpawnLoot/Thing.OnCreate/ThingGen 전역 패치/PatchAll/전역 TrySmoothPick/StackTrace도 계속 사용하지 않습니다.\n''';rd.write_text(t)
+
+# Compile-only stub support for party aggregation. No DamageHP stubs are added.
+st=root/'refs/Elin/Stub.cs';h=st.read_text()
+h=h.replace('public class Chara:Card{public int DEX;', 'public class Party{public List<Chara> members=new List<Chara>();}\npublic class Chara:Card{public Party party=new Party();public int DEX;')
+st.write_text(h)

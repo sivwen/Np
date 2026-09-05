@@ -11,7 +11,7 @@ namespace ElonaLuckForElinV3
 [BepInPlugin(G,N,V)]
 public sealed class Plugin : BaseUnityPlugin
 {
-    public const string G="sivwen.elin.elonaluck", N="Elona Luck for Elin v3.9", V="3.9.0";
+    public const string G="sivwen.elin.elonaluck", N="Elona Luck for Elin v3.10", V="3.10.0";
     internal static Plugin I=null!;
     Harmony? h;
 
@@ -99,6 +99,7 @@ public sealed class Plugin : BaseUnityPlugin
         PatchClass("보물상자",typeof(TreasureRarityNarrowPatch));
         PatchClass("블랙마켓 희귀도 컨텍스트",typeof(BlackmarketContextPatch));
         PatchClass("블랙마켓 희귀도 승급",typeof(BlackmarketRarityPatch));
+        PatchClass("몬스터 장비 난이도 운",typeof(MonsterEquipLuckPatch));
         PatchClass("사망 후 보너스 드롭",typeof(PostDeathBonusPatch));
         PatchClass("Finish 처치 컨텍스트",typeof(FinishKillContextPatch));
         PatchClass("전투 장비 보너스 드롭",typeof(CombatEquipmentBonusPatch));
@@ -580,6 +581,75 @@ static class CombatEquipmentBonusPatch
     {
         try{CombatEquipmentBonusCore.Process(c);}
         catch(Exception ex){Plugin.I.Logger.LogWarning("[Luck] 전투 장비 보너스 런타임 예외: "+ex.GetType().Name+" "+ex.Message);}
+    }
+}
+
+
+[HarmonyPatch]
+static class MonsterEquipLuckPatch
+{
+    static MethodBase? target;
+    static ConfigEntry<bool>? Enabled,EnemyOnly,FlavorLog;
+    static ConfigEntry<int>? LuckDiv,LuckCap,DoubleUpgradeThreshold;
+
+    static bool Prepare()
+    {
+        Enabled=Plugin.I.Config.Bind("장비 운","몬스터 장비가 플레이어 운에 반응",false,"고위험/고보상 옵션입니다. 적이 장비를 생성할 때 플레이어 Luck으로 장비 희귀도를 올릴 수 있어 전투 난이도와 잠재 전리품 가치가 함께 증가합니다. 기본값은 꺼짐입니다.");
+        EnemyOnly=Plugin.I.Config.Bind("장비 운","적대 몬스터만 적용",true,"플레이어 진영/중립 NPC를 제외하고 적대 개체의 장비 생성에만 적용합니다.");
+        LuckDiv=Plugin.I.Config.Bind("장비 운","몬스터 장비 운 분모",40,"희귀도 1단계 승급 확률은 Luck/이 값(%)입니다.");
+        LuckCap=Plugin.I.Config.Bind("장비 운","몬스터 장비 승급 확률 상한",35,"희귀도 1단계 승급 확률 상한(%)입니다.");
+        DoubleUpgradeThreshold=Plugin.I.Config.Bind("장비 운","2단계 승급 시작 Luck",2000,"이 Luck 이상부터 첫 승급에 성공했을 때 두 번째 승급을 추가로 판정합니다. 0이면 2단계 승급을 사용하지 않습니다.");
+        FlavorLog=Plugin.I.Config.Bind("장비 운","몬스터 장비 플레이버 로그",false,"몬스터 장비 희귀도가 실제로 상승했을 때 게임 플레이 로그에 메시지를 표시합니다. 몬스터 생성이 잦으면 로그가 많아질 수 있어 기본값은 꺼짐입니다.");
+        target=typeof(Chara).GetMethod("SetEQQuality",BindingFlags.Instance|BindingFlags.NonPublic);
+        if(target==null)
+        {
+            Plugin.I.Logger.LogWarning("[Luck] 몬스터 장비 운: Chara.SetEQQuality를 찾지 못해 비활성화합니다.");
+            return false;
+        }
+        return true;
+    }
+
+    static MethodBase TargetMethod()=>target!;
+
+    static void Postfix(Chara __instance)
+    {
+        try
+        {
+            if(Enabled==null||!Enabled.Value||__instance==null||EClass.pc==null)return;
+            if(__instance.IsPCFaction)return;
+            if(EnemyOnly!=null&&EnemyOnly.Value)
+            {
+                try{if(__instance.OriginalHostility!=Hostility.Enemy)return;}catch{return;}
+            }
+            var bp=CardBlueprint.current;
+            if(bp==null||bp!=CardBlueprint.CharaGenEQ)return;
+            var old=bp.rarity;
+            if(old==Rarity.Artifact||old==Rarity.Mythical||old==Rarity.Random)return;
+            int chance=Math.Min(Math.Max(0,LuckCap?.Value??35),Math.Max(0,Plugin.Luck()/Math.Max(1,LuckDiv?.Value??40)));
+            if(chance<=0||EClass.rnd(100)>=chance)return;
+            var now=Upgrade(old);
+            int threshold=DoubleUpgradeThreshold?.Value??2000;
+            if(threshold>0&&Plugin.Luck()>=threshold&&now!=Rarity.Mythical&&now!=Rarity.Artifact)
+            {
+                int extra=Math.Min(chance,Math.Max(1,(Plugin.Luck()-threshold)/Math.Max(1,(LuckDiv?.Value??40)*2)));
+                if(EClass.rnd(100)<extra)now=Upgrade(now);
+            }
+            if(now==old)return;
+            bp.rarity=now;
+            if(FlavorLog!=null&&FlavorLog.Value)Msg.SayRaw("기묘한 행운이 적의 장비마저 날카롭게 벼렸다.");
+        }
+        catch(Exception ex)
+        {
+            Plugin.I.Logger.LogWarning("[Luck] 몬스터 장비 운 런타임 예외: "+ex.GetType().Name+" "+ex.Message);
+        }
+    }
+
+    static Rarity Upgrade(Rarity r)
+    {
+        if(r==Rarity.Crude||r==Rarity.Normal)return Rarity.Superior;
+        if(r==Rarity.Superior)return Rarity.Legendary;
+        if(r==Rarity.Legendary)return Rarity.Mythical;
+        return r;
     }
 }
 

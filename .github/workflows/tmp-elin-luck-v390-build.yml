@@ -1,0 +1,49 @@
+name: tmp-elin-luck-v390-build
+on:
+  push:
+    branches: ["tmp-elin-elona-luck-v390-20260905"]
+jobs:
+  build:
+    if: ${{ github.event.head_commit.message != 'Apply v3.9 combat equipment bonus' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp-elin-elona-luck-v390-20260905
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply v3.9 source changes
+        run: python _tmp/ElonaLuckForElinV3/v39_patch.py
+      - name: Safety audit
+        run: |
+          SRC=_tmp/ElonaLuckForElinV3/Plugin.cs
+          ! grep -F 'HarmonyPatch(typeof(Card),nameof(Card.SpawnLoot)' "$SRC"
+          ! grep -F 'HarmonyPatch(typeof(Card),nameof(Card.Die)' "$SRC"
+          ! grep -F 'HarmonyPatch(typeof(Thing),nameof(Thing.OnCreate)' "$SRC"
+          ! grep -F 'PatchAll()' "$SRC"
+          ! grep -F 'StackTrace' "$SRC"
+          ! grep -F 'HarmonyPatch(typeof(Map),nameof(Map.TrySmoothPick)' "$SRC"
+          grep -F 'FinishKillContextPatch' "$SRC"
+          grep -F 'CombatEquipmentBonusPatch' "$SRC"
+          grep -F 'ZoneEventManager),nameof(ZoneEventManager.OnCharaDie)' "$SRC"
+      - run: dotnet build _tmp/ElonaLuckForElinV3/ElonaLuckForElinV3.csproj -c Release
+      - name: Commit v3.9 source
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add _tmp/ElonaLuckForElinV3
+          git commit -m 'Apply v3.9 combat equipment bonus' || true
+          git push origin HEAD:tmp-elin-elona-luck-v390-20260905
+      - name: Package
+        run: |
+          mkdir -p artifact/ElonaLuckForElin
+          cp _tmp/ElonaLuckForElinV3/bin/Release/netstandard2.0/ElonaLuckForElin.dll artifact/ElonaLuckForElin/
+          cp _tmp/ElonaLuckForElinV3/package.xml artifact/ElonaLuckForElin/
+          cp _tmp/ElonaLuckForElinV3/README_KR.md artifact/ElonaLuckForElin/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElonaLuckForElin-v3.9
+          path: artifact/ElonaLuckForElin

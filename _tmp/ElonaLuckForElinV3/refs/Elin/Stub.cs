@@ -29,3 +29,8 @@ public class Zone{public Card AddCard(Card c,Point p)=>c;}
 public class ZoneEventManager{public void OnCharaDie(Chara c){}}
 public static class ThingGen{public static Thing Create(string id,int idMat=-1,int lv=-1)=>new Thing{id=id,LV=lv};public static void CreateTreasureContent(Thing t,int lv,TreasureType type,bool clearContent){}}
 public static class EClass{public static Chara pc=new Chara();public static Zone _zone=new Zone();public static int rnd(int a)=>0;public static float rndf(float a)=>0f;}
+
+public class Element{public int id;}
+public class RecipeSource{public Element GetReqSkill()=>new Element();}
+public class Recipe{public RecipeSource source=new RecipeSource();}
+public class LayerCraft{public Recipe recipe=new Recipe();public int GetReqIngredient(int index)=>1;}

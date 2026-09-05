@@ -1,4 +1,4 @@
-# Elona Luck for Elin v3.5
+# Elona Luck for Elin v3.6
 
 v3.4에서 포식/HP 0 사망 문제가 정상화된 것을 기준으로, 안전 구조를 유지하면서 SkillAndLuckMatter식 활동 보너스 일부를 직접 산출 패치로 복원한 버전입니다.
 
@@ -76,3 +76,12 @@ AI_Fish.Makefish() 내부에는 실패, 고대책, 메달, 플래티넘/스크�
 - 보물상자 장비 희귀도 Luck
 
 호환 기준: Elin EA 23.338 Patch 2
+
+
+## 제작/가공 재료 환급
+- AI_UseCrafter가 실제로 소비할 수량을 받는 LayerCraft.GetReqIngredient()만 보정합니다.
+- UI 필요량과 제작 가능 판정은 원본 그대로입니다.
+- Skill:Luck = 3:2 활동 점수와 기존 곡선의 1/10 확률로 재료 단위별 절약 판정을 합니다.
+- 기본 환급률 상한 50%, 최소 1개는 항상 소비합니다.
+- Recipe.Craft, 재료 전체 스택 복제, 전역 Thing.Split/Destroy는 패치하지 않습니다.
+- 낚시 희귀 보상은 이번 안정 배치에서 보류합니다.

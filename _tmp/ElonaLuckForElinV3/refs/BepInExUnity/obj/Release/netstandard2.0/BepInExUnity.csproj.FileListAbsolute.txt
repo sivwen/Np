@@ -1,0 +1,14 @@
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/bin/Release/netstandard2.0/BepInEx.Unity.deps.json
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/bin/Release/netstandard2.0/BepInEx.Unity.dll
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/bin/Release/netstandard2.0/BepInEx.Unity.pdb
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/bin/Release/netstandard2.0/BepInEx.Core.dll
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/bin/Release/netstandard2.0/BepInEx.Core.pdb
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInExUnity.csproj.AssemblyReference.cache
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInExUnity.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInExUnity.AssemblyInfoInputs.cache
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInExUnity.AssemblyInfo.cs
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInExUnity.csproj.CoreCompileInputs.cache
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInExUnity.sourcelink.json
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInExU.2E68F1EE.Up2Date
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInEx.Unity.dll
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/BepInExUnity/obj/Release/netstandard2.0/BepInEx.Unity.pdb

@@ -11,7 +11,7 @@ namespace ElonaLuckForElinV3
 [BepInPlugin(G,N,V)]
 public sealed class Plugin : BaseUnityPlugin
 {
-    public const string G="sivwen.elin.elonaluck", N="Elona Luck for Elin v3.5", V="3.5.0";
+    public const string G="sivwen.elin.elonaluck", N="Elona Luck for Elin v3.6", V="3.6.0";
     internal static Plugin I=null!;
     Harmony? h;
 
@@ -101,6 +101,7 @@ public sealed class Plugin : BaseUnityPlugin
         PatchClass("땅파기 직접 산출",typeof(MineFloorActivityPatch));
         PatchClass("벌목 직접 산출",typeof(ChopActivityPatch));
         PatchClass("작물 직접 수확",typeof(HarvestActivityPatch));
+        PatchClass("제작 재료 환급",typeof(CraftRefundPatch));
         Logger.LogInfo(N+" "+V+" loaded. SpawnLoot/Card.Die/PatchAll/전역 TrySmoothPick/StackTrace 사용 안 함.");
     }
 
@@ -218,5 +219,33 @@ static class ChopActivityPatch
 
 [HarmonyPatch(typeof(GrowSystem),nameof(GrowSystem.Harvest),new Type[]{typeof(Chara)})]
 static class HarvestActivityPatch{static readonly MethodInfo H=typeof(ActivityOutputCore).GetMethod(nameof(ActivityOutputCore.PickHarvest))!;static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> x)=>ActivityTranspilerUtil.Replace(x,H);}
+
+
+[HarmonyPatch(typeof(LayerCraft),nameof(LayerCraft.GetReqIngredient),new Type[]{typeof(int)})]
+static class CraftRefundPatch
+{
+    static ConfigEntry<bool>? Enabled;
+    static ConfigEntry<int>? RefundCap;
+    static bool Prepare()
+    {
+        Enabled=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작/가공 재료 환급",true,"실제 제작 소비 단계에서만 스킬+운에 따라 일부 재료 소비를 줄입니다. UI 필요량과 제작 가능 판정은 원본 그대로입니다.");
+        RefundCap=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작 재료 환급률 상한",50,"재료 1개당 환급 확률의 상한(%)입니다. 안전을 위해 최소 1개는 항상 소비합니다.");
+        return true;
+    }
+    static void Postfix(LayerCraft __instance,int index,ref int __result)
+    {
+        if(Enabled==null||!Enabled.Value||__result<=1||EClass.pc==null||__instance==null||__instance.recipe==null)return;
+        Element req=__instance.recipe.source?.GetReqSkill();
+        int skill=req==null?0:EClass.pc.Evalue(req.id);
+        double chance=Plugin.ActivityCurve(Plugin.ActivityScore(skill))/10.0;
+        chance=Math.Min(Math.Max(0,RefundCap?.Value??50)/100.0,Math.Max(0,chance));
+        if(chance<=0)return;
+        int saved=0;
+        int maxSave=__result-1;
+        int threshold=(int)(chance*100000.0);
+        for(int i=0;i<maxSave;i++)if(EClass.rnd(100000)<threshold)saved++;
+        if(saved>0)__result=Math.Max(1,__result-saved);
+    }
+}
 
 }

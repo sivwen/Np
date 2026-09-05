@@ -1,0 +1,124 @@
+{
+  "runtimeTarget": {
+    "name": ".NETStandard,Version=v2.0/",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETStandard,Version=v2.0": {},
+    ".NETStandard,Version=v2.0/": {
+      "ElonaLuckForElin/3.6.0": {
+        "dependencies": {
+          "0Harmony": "1.0.0",
+          "BepInEx.Core": "1.0.0",
+          "BepInEx.Unity": "1.0.0",
+          "Elin": "1.0.0",
+          "0Harmony.Reference": "1.0.0.0",
+          "BepInEx.Core.Reference": "1.0.0.0",
+          "BepInEx.Unity.Reference": "1.0.0.0"
+        },
+        "runtime": {
+          "ElonaLuckForElin.dll": {}
+        }
+      },
+      "0Harmony/1.0.0": {
+        "runtime": {
+          "0Harmony.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "BepInEx.Core/1.0.0": {
+        "runtime": {
+          "BepInEx.Core.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "BepInEx.Unity/1.0.0": {
+        "dependencies": {
+          "BepInEx.Core": "1.0.0"
+        },
+        "runtime": {
+          "BepInEx.Unity.dll": {
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Elin/1.0.0": {
+        "runtime": {
+          "Elin.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "0Harmony.Reference/1.0.0.0": {
+        "runtime": {
+          "0Harmony.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "BepInEx.Core.Reference/1.0.0.0": {
+        "runtime": {
+          "BepInEx.Core.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "BepInEx.Unity.Reference/1.0.0.0": {
+        "runtime": {
+          "BepInEx.Unity.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "ElonaLuckForElin/3.6.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "0Harmony/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BepInEx.Core/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BepInEx.Unity/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Elin/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "0Harmony.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BepInEx.Core.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "BepInEx.Unity.Reference/1.0.0.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

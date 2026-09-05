@@ -1,0 +1,11 @@
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/bin/Release/netstandard2.0/Elin.deps.json
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/bin/Release/netstandard2.0/Elin.dll
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/bin/Release/netstandard2.0/Elin.pdb
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/obj/Release/netstandard2.0/Elin.csproj.AssemblyReference.cache
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/obj/Release/netstandard2.0/Elin.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/obj/Release/netstandard2.0/Elin.AssemblyInfoInputs.cache
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/obj/Release/netstandard2.0/Elin.AssemblyInfo.cs
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/obj/Release/netstandard2.0/Elin.csproj.CoreCompileInputs.cache
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/obj/Release/netstandard2.0/Elin.sourcelink.json
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/obj/Release/netstandard2.0/Elin.dll
+/home/runner/work/Np/Np/_tmp/ElonaLuckForElinV3/refs/Elin/obj/Release/netstandard2.0/Elin.pdb

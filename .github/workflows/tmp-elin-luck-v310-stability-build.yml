@@ -1,0 +1,75 @@
+name: tmp-elin-luck-v310-stability-build
+on:
+  push:
+    branches: ["tmp-elin-elona-luck-v390-20260905"]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply v3.10 stability hardening
+        shell: python
+        run: |
+          from pathlib import Path
+          root=Path('_tmp/ElonaLuckForElinV3')
+          p=root/'Plugin.cs'
+          s=p.read_text()
+          s=s.replace('N="Elona Luck for Elin v3.9", V="3.9.0"','N="Elona Luck for Elin v3.10", V="3.10.0"')
+          old='static Exception? Finalizer(Trait __instance,S __state,Exception? __exception){if(__state!=null&&__state.changed&&__instance.owner.c_lockLv>0)__instance.owner.c_lockLv=__state.lv;return __exception;}'
+          new='static Exception? Finalizer(Trait __instance,S __state,Exception? __exception){if(__state!=null&&__state.changed&&__instance.owner!=null)__instance.owner.c_lockLv=__state.lv;return __exception;}'
+          if old not in s: raise SystemExit('Lock finalizer pattern not found')
+          s=s.replace(old,new)
+          anchor='    internal static int Luck(){int l=EClass.pc==null?1:EClass.pc.Evalue(78);return Math.Max(1,Math.Min(9999,l));}\n'
+          helper='    internal static bool HasAssembly(string token){try{foreach(var a in AppDomain.CurrentDomain.GetAssemblies()){string n=a.GetName().Name??"";if(n.IndexOf(token,StringComparison.OrdinalIgnoreCase)>=0)return true;}}catch{}return false;}\n'
+          if helper not in s:
+              if anchor not in s: raise SystemExit('Luck helper anchor not found')
+              s=s.replace(anchor,anchor+helper)
+          old='        PatchClass("낚시 희귀 보상",typeof(FishRareRewardPatch));'
+          new='        if(HasAssembly("LuckyFishing"))Logger.LogWarning("[Luck] LuckyFishing 감지: 낚시 희귀 보상 transpiler는 충돌 방지를 위해 자동 비활성화합니다. 물고기 tier Postfix는 유지합니다.");else PatchClass("낚시 희귀 보상",typeof(FishRareRewardPatch));'
+          if old not in s: raise SystemExit('Fish rare patch registration not found')
+          s=s.replace(old,new)
+          a='static class PostDeathBonusPatch{static void Postfix(Chara c){try{BonusDropCore.Process(c);}catch(Exception ex){Plugin.I.Logger.LogWarning("[Luck] 사망 후 보너스 드롭 런타임 예외: "+ex.GetType().Name+" "+ex.Message);}}}'
+          b='static class PostDeathBonusPatch{[HarmonyPriority(Priority.Last)] static void Postfix(Chara c){try{BonusDropCore.Process(c);}catch(Exception ex){Plugin.I.Logger.LogWarning("[Luck] 사망 후 보너스 드롭 런타임 예외: "+ex.GetType().Name+" "+ex.Message);}}}'
+          if a not in s: raise SystemExit('PostDeathBonusPatch pattern not found')
+          s=s.replace(a,b)
+          a='    static void Postfix(Chara c)\n    {\n        try{CombatEquipmentBonusCore.Process(c);}'
+          b='    [HarmonyPriority(Priority.Last)]\n    static void Postfix(Chara c)\n    {\n        try{CombatEquipmentBonusCore.Process(c);}'
+          if a not in s: raise SystemExit('CombatEquipmentBonusPatch pattern not found')
+          s=s.replace(a,b)
+          marker='        h=new Harmony(G);\n'
+          diag='        if(HasAssembly("KillDropEffect"))Logger.LogInfo("[Luck] KillDropEffect 감지: 사망 후 보너스는 Priority.Last로 실행합니다.");\n        if(HasAssembly("BetterSlime"))Logger.LogInfo("[Luck] Better Slime 계열 감지: 비전투/포식 사망은 공격자 검증 실패 시 보너스 드롭을 건너뜁니다.");\n'
+          if diag not in s:
+              if marker not in s: raise SystemExit('Harmony marker not found')
+              s=s.replace(marker,diag+marker)
+          p.write_text(s)
+          cs=root/'ElonaLuckForElinV3.csproj'; cs.write_text(cs.read_text().replace('<Version>3.9.0</Version>','<Version>3.10.0</Version>'))
+          pkg=root/'package.xml'; pkg.write_text(pkg.read_text().replace('Elona Luck for Elin v3.9','Elona Luck for Elin v3.10'))
+          rd=root/'README_KR.md'; t=rd.read_text().replace('# Elona Luck for Elin v3.9','# Elona Luck for Elin v3.10'); t += '\n\n## v3.10 안정화\n- 자물쇠 Luck 임시 레벨을 0으로 낮춘 경우에도 원래 c_lockLv를 반드시 복원합니다.\n- LuckyFishing 감지 시 Makefish 희귀 보상 transpiler만 자동 비활성화합니다. 단순 fish tier Postfix는 유지합니다.\n- ZoneEventManager.OnCharaDie 기반 보너스는 Harmony Priority.Last로 실행합니다.\n- Card.Die, Card.SpawnLoot, Thing.OnCreate, 전역 RNG, StackTrace, PatchAll은 계속 사용하지 않습니다.\n'; rd.write_text(t)
+          hs=root/'refs/Harmony/Stub.cs'; h=hs.read_text();
+          if 'class HarmonyPriority' not in h: h=h.replace('namespace HarmonyLib{', 'namespace HarmonyLib{public static class Priority{public const int Last=0;}[AttributeUsage(AttributeTargets.Method|AttributeTargets.Class)]public sealed class HarmonyPriority:Attribute{public HarmonyPriority(int p){}}')
+          hs.write_text(h)
+      - name: Safety audit
+        run: |
+          set -eu
+          P=_tmp/ElonaLuckForElinV3/Plugin.cs
+          ! grep -q 'HarmonyPatch(typeof(Card),nameof(Card.Die)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(Card),nameof(Card.SpawnLoot)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(Thing),nameof(Thing.OnCreate)' "$P"
+          ! grep -q 'StackTrace' "$P"
+          ! grep -q '\.PatchAll()' "$P"
+          grep -q 'LuckyFishing 감지' "$P"
+          grep -q 'HarmonyPriority(Priority.Last)' "$P"
+      - run: dotnet build _tmp/ElonaLuckForElinV3/ElonaLuckForElinV3.csproj -c Release
+      - name: Package
+        run: |
+          mkdir -p artifact/ElonaLuckForElin
+          cp _tmp/ElonaLuckForElinV3/bin/Release/netstandard2.0/ElonaLuckForElin.dll artifact/ElonaLuckForElin/
+          cp _tmp/ElonaLuckForElinV3/package.xml artifact/ElonaLuckForElin/
+          cp _tmp/ElonaLuckForElinV3/README_KR.md artifact/ElonaLuckForElin/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElonaLuckForElin-v3.10-Stability
+          path: artifact/ElonaLuckForElin

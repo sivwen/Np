@@ -1,0 +1,57 @@
+name: tmp-elin-luck-v3100-build
+on:
+  push:
+    branches: ["tmp-elin-elona-luck-v3100-20260905"]
+jobs:
+  build:
+    if: ${{ github.event.head_commit.message != 'Apply v3.10 monster equipment Luck' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp-elin-elona-luck-v3100-20260905
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply v3.10 source changes
+        run: python _tmp/ElonaLuckForElinV3/v310_monster_equip_patch.py
+      - name: Update compile stub
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('_tmp/ElonaLuckForElinV3/refs/Elin/Stub.cs')
+          s=p.read_text()
+          s=s.replace('public static class CardBlueprint{public static void SetRarity(Rarity q=Rarity.Normal){}}','public class CardBlueprint{public Rarity rarity=Rarity.Normal;public int qualityBonus;public static CardBlueprint current=new CardBlueprint();public static CardBlueprint CharaGenEQ=current;public static void SetRarity(Rarity q=Rarity.Normal){current=new CardBlueprint{rarity=q};}}')
+          p.write_text(s)
+          PY
+      - name: Safety audit
+        run: |
+          SRC=_tmp/ElonaLuckForElinV3/Plugin.cs
+          ! grep -F 'HarmonyPatch(typeof(Card),nameof(Card.SpawnLoot)' "$SRC"
+          ! grep -F 'HarmonyPatch(typeof(Card),nameof(Card.Die)' "$SRC"
+          ! grep -F 'HarmonyPatch(typeof(Thing),nameof(Thing.OnCreate)' "$SRC"
+          ! grep -F 'HarmonyPatch(typeof(ThingGen)' "$SRC"
+          ! grep -F 'PatchAll()' "$SRC"
+          ! grep -F 'StackTrace' "$SRC"
+          grep -F 'GetMethod("SetEQQuality"' "$SRC"
+          grep -F 'ReferenceEquals(bp,CardBlueprint.CharaGenEQ)' "$SRC"
+      - run: dotnet build _tmp/ElonaLuckForElinV3/ElonaLuckForElinV3.csproj -c Release
+      - name: Commit v3.10 source
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add _tmp/ElonaLuckForElinV3
+          git commit -m 'Apply v3.10 monster equipment Luck' || true
+          git push origin HEAD:tmp-elin-elona-luck-v3100-20260905
+      - name: Package
+        run: |
+          mkdir -p artifact/ElonaLuckForElin
+          cp _tmp/ElonaLuckForElinV3/bin/Release/netstandard2.0/ElonaLuckForElin.dll artifact/ElonaLuckForElin/
+          cp _tmp/ElonaLuckForElinV3/package.xml artifact/ElonaLuckForElin/
+          cp _tmp/ElonaLuckForElinV3/README_KR.md artifact/ElonaLuckForElin/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElonaLuckForElin-v3.10
+          path: artifact/ElonaLuckForElin

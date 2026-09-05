@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Elin")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8930b4ad3bb7a782c54642cddf0dbdb21cebda9f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4db1883e56ae44439ac63d367439a2272fbb88ba")]
 [assembly: System.Reflection.AssemblyProductAttribute("Elin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Elin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

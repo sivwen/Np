@@ -5,18 +5,19 @@ public enum Rarity{Crude,Normal,Superior,Legendary,Mythical,Artifact}
 public enum TreasureType{Map,BossNefia,BossQuest,SurvivalRaid,RandomChest}
 public enum ShopType{None,Blackmarket,Exotic}
 public class Category{public bool IsChildOf(string s)=>false;}
+public class ThingContainer:System.Collections.Generic.List<Thing>{}
 public class CardRow{public string[] loot=Array.Empty<string>();}
 public class SourceRace{public class Row{public string[] loot=Array.Empty<string>();}}
 public class Point{public List<Card> ListCards(bool includeMasked=false)=>new List<Card>();public bool TryWitnessCrime(Chara criminal,Chara target=null,int radius=4,Func<Chara,bool> funcWitness=null)=>false;}
 public class Card{
- public Category category=new Category();public Point pos=new Point();public string id="";public bool isThing=true;
+ public Category category=new Category();public Point pos=new Point();public string id="";public bool isThing=true;public ThingContainer things=new ThingContainer();
  public int c_lockLv;public int hp;public int MaxHP=100;public int LV=1;public int uid=1;public long ChildrenAndSelfWeight=>1000;
- public bool IsEquipment=>false;public bool IsPC=>true;public bool IsPCFaction=>true;public bool IsPCFactionOrMinion=>true;public Rarity rarity;
+ public bool IsEquipment=>false;public bool IsEquipmentOrRanged=>false;public bool IsUnique=>false;public bool isGifted;public bool isHidden;public bool isNPCProperty;public bool IsPC=>true;public bool IsPCFaction=>true;public bool IsPCFactionOrMinion=>true;public Rarity rarity;
  public virtual CardRow sourceCard=>new CardRow();public Chara Chara=>this as Chara;
- public virtual int Evalue(int id)=>0;public Thing MakeEgg(bool effect=true,int num=1,bool addToZone=true,int fertChance=20,BlessedState? state=null)=>new Thing();
+ public virtual int Evalue(int id)=>0;public void SetInt(int id,int v=0){}public Thing MakeEgg(bool effect=true,int num=1,bool addToZone=true,int fertChance=20,BlessedState? state=null)=>new Thing();
 }
 public class Thing:Card{public int tier;public int Num=1;public void SetTier(int t){tier=t;}public void ModNum(int n,bool notify=true){Num+=n;}public Thing Duplicate(int n)=>new Thing{Num=n,id=id};}
-public class Chara:Card{public int DEX;public int STR;public bool IsPCParty=>true;public bool IsMachine;public bool IsAnimal;public SourceRace.Row race=new SourceRace.Row();public override CardRow sourceCard=>new CardRow();public Card AddCard(Card c)=>c;public bool HasElement(int id)=>false;public Thing MakeGene()=>new Thing{id="gene"};}
+public class Chara:Card{public int DEX;public int STR;public bool TryNeckHunt(Chara TC,int power,bool harvest=false)=>false;public bool IsPCParty=>true;public bool IsMachine;public bool IsAnimal;public SourceRace.Row race=new SourceRace.Row();public override CardRow sourceCard=>new CardRow();public Card AddCard(Card c)=>c;public bool HasElement(int id)=>false;public Thing MakeGene()=>new Thing{id="gene"};}
 public class Trait{public Card owner=new Card();public virtual ShopType ShopType=>ShopType.None;public virtual LockOpenState TryOpenLock(Chara c,bool msgFail=true)=>LockOpenState.Fail;}
 public class TraitCrafter:Trait{}
 public class AI_Fish{public static Thing Makefish(Chara c)=>null;}

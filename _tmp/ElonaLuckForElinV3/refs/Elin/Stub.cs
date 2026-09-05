@@ -1,9 +1,10 @@
 using System;using System.Collections.Generic;
 public enum LockOpenState{Success,NotEnoughSkill,Fail}
 public enum BlessedState{Normal,Cursed,Doomed,Blessed}
-public enum Rarity{Crude,Normal,Superior,Legendary,Mythical,Artifact}
+public enum Rarity{Random,Crude,Normal,Superior,Legendary,Mythical,Artifact}
 public enum TreasureType{Map,BossNefia,BossQuest,SurvivalRaid,RandomChest}
 public enum ShopType{None,Blackmarket,Exotic}
+public enum Hostility{Ally,Neutral,Enemy}
 public class Category{public bool IsChildOf(string s)=>false;}
 public class ThingContainer:System.Collections.Generic.List<Thing>{}
 public class CardRow{public string[] loot=Array.Empty<string>();}
@@ -17,7 +18,7 @@ public class Card{
  public virtual int Evalue(int id)=>0;public void SetInt(int id,int v=0){}public Thing MakeEgg(bool effect=true,int num=1,bool addToZone=true,int fertChance=20,BlessedState? state=null)=>new Thing();
 }
 public class Thing:Card{public int tier;public int Num=1;public void SetTier(int t){tier=t;}public void ModNum(int n,bool notify=true){Num+=n;}public Thing Duplicate(int n)=>new Thing{Num=n,id=id};}
-public class Chara:Card{public int DEX;public int STR;public bool TryNeckHunt(Chara TC,int power,bool harvest=false)=>false;public bool IsPCParty=>true;public bool IsMachine;public bool IsAnimal;public SourceRace.Row race=new SourceRace.Row();public override CardRow sourceCard=>new CardRow();public Card AddCard(Card c)=>c;public bool HasElement(int id)=>false;public Thing MakeGene()=>new Thing{id="gene"};}
+public class Chara:Card{public int DEX;public int STR;public Hostility OriginalHostility=>Hostility.Enemy;public bool TryNeckHunt(Chara TC,int power,bool harvest=false)=>false;public bool IsPCParty=>true;public bool IsMachine;public bool IsAnimal;public SourceRace.Row race=new SourceRace.Row();public override CardRow sourceCard=>new CardRow();public Card AddCard(Card c)=>c;public bool HasElement(int id)=>false;public Thing MakeGene()=>new Thing{id="gene"};}
 public class Trait{public Card owner=new Card();public virtual ShopType ShopType=>ShopType.None;public virtual LockOpenState TryOpenLock(Chara c,bool msgFail=true)=>LockOpenState.Fail;}
 public class TraitCrafter:Trait{}
 public class AI_Fish{public static Thing Makefish(Chara c)=>null;}
@@ -30,7 +31,7 @@ public class AttackProcess{public static AttackProcess Current=new AttackProcess
 public class Zone{public Card AddCard(Card c,Point p)=>c;}
 public class ZoneEventManager{public void OnCharaDie(Chara c){}}
 public static class ThingGen{public static Thing Create(string id,int idMat=-1,int lv=-1)=>new Thing{id=id,LV=lv};public static void CreateTreasureContent(Thing t,int lv,TreasureType type,bool clearContent){}}
-public static class CardBlueprint{public static void SetRarity(Rarity q=Rarity.Normal){}}
+public class CardBlueprint{public Rarity rarity=Rarity.Random;public static CardBlueprint current=new CardBlueprint();public static CardBlueprint CharaGenEQ=new CardBlueprint();public static void SetRarity(Rarity q=Rarity.Normal){current=new CardBlueprint{rarity=q};}}
 public static class EClass{public static Chara pc=new Chara();public static Zone _zone=new Zone();public static int rnd(int a)=>0;public static float rndf(float a)=>0f;}
 
 public class Element{public int id;}

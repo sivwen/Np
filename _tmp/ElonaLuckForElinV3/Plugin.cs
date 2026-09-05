@@ -11,7 +11,7 @@ namespace ElonaLuckForElinV3
 [BepInPlugin(G,N,V)]
 public sealed class Plugin : BaseUnityPlugin
 {
-    public const string G="sivwen.elin.elonaluck", N="Elona Luck for Elin v3.6", V="3.6.0";
+    public const string G="sivwen.elin.elonaluck", N="Elona Luck for Elin v3.7", V="3.7.0";
     internal static Plugin I=null!;
     Harmony? h;
 
@@ -89,6 +89,7 @@ public sealed class Plugin : BaseUnityPlugin
         PatchClass("범죄 목격",typeof(WitnessPatch));
         PatchClass("자물쇠",typeof(LockPatch));
         PatchClass("낚시 품질",typeof(FishPatch));
+        PatchClass("낚시 희귀 보상",typeof(FishRareRewardPatch));
         PatchClass("카지노",typeof(CasinoPatch));
         PatchClass("훔치기 시도 난수",typeof(StealAttemptRollPatch));
         PatchClass("훔치기 중량",typeof(StealWeightNarrowPatch));
@@ -225,11 +226,13 @@ static class HarvestActivityPatch{static readonly MethodInfo H=typeof(ActivityOu
 static class CraftRefundPatch
 {
     static ConfigEntry<bool>? Enabled;
+    static ConfigEntry<bool>? FlavorLog;
     static ConfigEntry<int>? RefundCap;
     static bool Prepare()
     {
         Enabled=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작/가공 재료 환급",true,"실제 제작 소비 단계에서만 스킬+운에 따라 일부 재료 소비를 줄입니다. UI 필요량과 제작 가능 판정은 원본 그대로입니다.");
         RefundCap=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작 재료 환급률 상한",50,"재료 1개당 환급 확률의 상한(%)입니다. 안전을 위해 최소 1개는 항상 소비합니다.");
+        FlavorLog=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작 환급 플레이버 로그",true,"운으로 실제 재료 소비가 줄었을 때 게임 플레이 로그에 짧은 메시지를 남깁니다.");
         return true;
     }
     static void Postfix(LayerCraft __instance,int index,ref int __result)
@@ -244,7 +247,79 @@ static class CraftRefundPatch
         int maxSave=__result-1;
         int threshold=(int)(chance*100000.0);
         for(int i=0;i<maxSave;i++)if(EClass.rnd(100000)<threshold)saved++;
-        if(saved>0)__result=Math.Max(1,__result-saved);
+        if(saved>0){__result=Math.Max(1,__result-saved);if(FlavorLog!=null&&FlavorLog.Value)Msg.SayRaw("손끝에 행운이 스쳤다. 재료 "+saved+"개를 아꼈다.");}
+    }
+}
+
+
+[HarmonyPatch(typeof(AI_Fish),nameof(AI_Fish.Makefish),new Type[]{typeof(Chara)})]
+static class FishRareRewardPatch
+{
+    static ConfigEntry<bool>? Enabled,AncientBook,Medal,CoinGroup,SpecialReward,BigCatch;
+    static ConfigEntry<int>? LuckDiv,LuckCap;
+    static readonly MethodInfo Rnd=typeof(EClass).GetMethod(nameof(EClass.rnd),new Type[]{typeof(int)})!;
+    static readonly MethodInfo Helper=typeof(FishRareRewardPatch).GetMethod(nameof(LuckRnd),BindingFlags.Static|BindingFlags.NonPublic)!;
+
+    static bool Prepare()
+    {
+        Enabled=Plugin.I.Config.Bind("낚시 운","희귀 보상 운",true,"Makefish 내부에서 확인된 희귀 보상 첫 관문만 운으로 보정합니다.");
+        AncientBook=Plugin.I.Config.Bind("낚시 운","고대책 운",true,"고대책의 원래 1/30 판정을 운으로 완화합니다.");
+        Medal=Plugin.I.Config.Bind("낚시 운","메달 운",true,"메달의 첫 1/40 관문만 운으로 완화하며 낚시 스킬 조건은 원본 그대로 유지합니다.");
+        CoinGroup=Plugin.I.Config.Bind("낚시 운","코인류 운",true,"플래티넘/스크래치/카지노/가챠 코인 묶음의 원래 1/35 관문만 운으로 완화합니다. 내부 보상 종류 비율은 바꾸지 않습니다.");
+        SpecialReward=Plugin.I.Config.Bind("낚시 운","특수 희귀품 운",true,"코인류 관문 안의 특수 희귀품 1/50 판정을 운으로 완화합니다.");
+        BigCatch=Plugin.I.Config.Bind("낚시 운","대어 운",true,"대어 판정의 rnd(100) 범위만 운으로 완화합니다. 지형/거점 보정값은 원본 그대로입니다.");
+        LuckDiv=Plugin.I.Config.Bind("낚시 운","희귀 보상 운 분모",20,"운이 이 값만큼 오를 때 희귀 보상 상대 확률이 1% 증가합니다.");
+        LuckCap=Plugin.I.Config.Bind("낚시 운","희귀 보상 상대 보너스 상한",100,"희귀 보상 상대 확률 증가 상한입니다.");
+        return true;
+    }
+
+    static bool IsLdc(CodeInstruction c,int v)
+    {
+        if(c.opcode==OpCodes.Ldc_I4)return c.operand is int x&&x==v;
+        if(c.opcode==OpCodes.Ldc_I4_S)return Convert.ToInt32(c.operand)==v;
+        if(v>=0&&v<=8){OpCode[] a={OpCodes.Ldc_I4_0,OpCodes.Ldc_I4_1,OpCodes.Ldc_I4_2,OpCodes.Ldc_I4_3,OpCodes.Ldc_I4_4,OpCodes.Ldc_I4_5,OpCodes.Ldc_I4_6,OpCodes.Ldc_I4_7,OpCodes.Ldc_I4_8};return c.opcode==a[v];}
+        return false;
+    }
+    static bool IsRnd(CodeInstruction c)=>c.operand is MethodInfo m&&m==Rnd&&(c.opcode==OpCodes.Call||c.opcode==OpCodes.Callvirt);
+    static int LuckRnd(int max,Chara c,int kind)
+    {
+        if(Enabled==null||!Enabled.Value||c==null||!c.IsPC||max<=1)return EClass.rnd(max);
+        bool on=kind switch{1=>AncientBook?.Value??false,2=>Medal?.Value??false,3=>CoinGroup?.Value??false,4=>SpecialReward?.Value??false,5=>BigCatch?.Value??false,_=>false};
+        if(!on)return EClass.rnd(max);
+        int rel=Plugin.RelativeBonus(LuckDiv!,LuckCap!);
+        return EClass.rnd(Plugin.ReduceDenom(max,rel));
+    }
+    static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    {
+        var src=new List<CodeInstruction>(instructions);
+        int i30=-1,i35=-1,i50=-1,i100=-1,i40first=-1,c40=0;
+        for(int i=1;i<src.Count;i++)
+        {
+            if(!IsRnd(src[i]))continue;
+            if(IsLdc(src[i-1],30)&&i30<0)i30=i;
+            else if(IsLdc(src[i-1],35)&&i35<0)i35=i;
+            else if(IsLdc(src[i-1],50)&&i50<0)i50=i;
+            else if(IsLdc(src[i-1],100)&&i100<0)i100=i;
+            else if(IsLdc(src[i-1],40)){c40++;if(i40first<0)i40first=i;}
+        }
+        if(i30<0||i35<0||i50<0||i100<0||i40first<0||c40<2)
+        {
+            Plugin.I.Logger.LogWarning($"[Luck] 낚시 희귀 보상 IL 패턴 불일치: 30={i30}, 35={i35}, 50={i50}, 100={i100}, 40count={c40}. 희귀 보상 패치를 적용하지 않습니다.");
+            foreach(var x in src)yield return x;
+            yield break;
+        }
+        var map=new Dictionary<int,int>{{i30,1},{i40first,2},{i35,3},{i50,4},{i100,5}};
+        for(int i=0;i<src.Count;i++)
+        {
+            if(map.TryGetValue(i,out int kind))
+            {
+                yield return new CodeInstruction(OpCodes.Ldarg_0);
+                yield return new CodeInstruction(OpCodes.Ldc_I4,kind);
+                yield return new CodeInstruction(OpCodes.Call,Helper);
+            }
+            else yield return src[i];
+        }
+        Plugin.I.Logger.LogInfo("[Luck] 낚시 희귀 보상 좁은 패치 적용: 고대책/메달 첫 관문/코인류/특수 희귀품/대어");
     }
 }
 

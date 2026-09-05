@@ -34,3 +34,5 @@ public class Element{public int id;}
 public class RecipeSource{public Element GetReqSkill()=>new Element();}
 public class Recipe{public RecipeSource source=new RecipeSource();}
 public class LayerCraft{public Recipe recipe=new Recipe();public int GetReqIngredient(int index)=>1;}
+
+public static class Msg{public static string SayRaw(string text)=>text;}

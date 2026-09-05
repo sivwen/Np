@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ElonaLuckForElin")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("3.7.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("3.7.0+8287f25cebde154aed7c6a2cdd34bfb26719c57f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("3.7.0+5a5beca925aa52d8f61f157274b215b5ecfc4fc0")]
 [assembly: System.Reflection.AssemblyProductAttribute("ElonaLuckForElin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ElonaLuckForElin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("3.7.0.0")]

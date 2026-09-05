@@ -90,6 +90,7 @@ public sealed class Plugin : BaseUnityPlugin
         PatchClass("자물쇠",typeof(LockPatch));
         PatchClass("낚시 품질",typeof(FishPatch));
         PatchClass("낚시 희귀 보상",typeof(FishRareRewardPatch));
+        PatchClass("낚시 희귀 보상",typeof(FishRareRewardPatch));
         PatchClass("카지노",typeof(CasinoPatch));
         PatchClass("훔치기 시도 난수",typeof(StealAttemptRollPatch));
         PatchClass("훔치기 중량",typeof(StealWeightNarrowPatch));
@@ -232,6 +233,7 @@ static class CraftRefundPatch
     {
         Enabled=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작/가공 재료 환급",true,"실제 제작 소비 단계에서만 스킬+운에 따라 일부 재료 소비를 줄입니다. UI 필요량과 제작 가능 판정은 원본 그대로입니다.");
         RefundCap=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작 재료 환급률 상한",50,"재료 1개당 환급 확률의 상한(%)입니다. 안전을 위해 최소 1개는 항상 소비합니다.");
+        FlavorLog=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작 환급 플레이버 로그",true,"운으로 실제 재료 소비가 줄었을 때 게임 플레이 로그에 짧은 메시지를 남깁니다.");
         FlavorLog=Plugin.I.Config.Bind("SkillAndLuckMatter 대체","제작 환급 플레이버 로그",true,"운으로 실제 재료 소비가 줄었을 때 게임 플레이 로그에 짧은 메시지를 남깁니다.");
         return true;
     }

@@ -1,0 +1,43 @@
+name: tmp-elin-luck-v315-build
+on:
+  push:
+    branches: ["tmp-elin-elona-luck-v312-20260906"]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply v3.15 transform
+        run: python _tmp/build_v315.py
+      - name: Safety audit
+        run: |
+          set -eu
+          P=_tmp/ElonaLuckForElinV3/Plugin.cs
+          ! grep -q 'HarmonyPatch(typeof(Card),nameof(Card.Die)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(Card),nameof(Card.SpawnLoot)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(Thing),nameof(Thing.OnCreate)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(ThingGen)' "$P"
+          ! grep -q 'StackTrace' "$P"
+          ! grep -q '\.PatchAll()' "$P"
+          grep -q 'LuckyFishingReplacementPatch' "$P"
+          grep -q 'FishingOutcomeLuckPatch' "$P"
+          grep -q 'EhekatlFishEscapeLuckPatch' "$P"
+          grep -q 'GoldenFishLuckPatch' "$P"
+          grep -q '8192=' "$P"
+          grep -q '819200=' "$P"
+          grep -q 'MonsterEquipContextPatch' "$P"
+          grep -q 'HarmonyPriority(Priority.Last)' "$P"
+      - run: dotnet build _tmp/ElonaLuckForElinV3/ElonaLuckForElinV3.csproj -c Release
+      - name: Package
+        run: |
+          mkdir -p artifact/ElonaLuckForElin
+          cp _tmp/ElonaLuckForElinV3/bin/Release/netstandard2.0/ElonaLuckForElin.dll artifact/ElonaLuckForElin/
+          cp _tmp/ElonaLuckForElinV3/package.xml artifact/ElonaLuckForElin/
+          cp _tmp/ElonaLuckForElinV3/README_KR.md artifact/ElonaLuckForElin/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ElonaLuckForElin-v3.15-GoldenFish
+          path: artifact/ElonaLuckForElin

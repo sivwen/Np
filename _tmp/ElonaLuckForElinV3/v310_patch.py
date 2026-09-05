@@ -26,7 +26,7 @@ static class MonsterEquipLuckPatch
         LuckCap=Plugin.I.Config.Bind("장비 운","몬스터 장비 승급 확률 상한",35,"희귀도 1단계 승급 확률 상한(%)입니다.");
         DoubleUpgradeThreshold=Plugin.I.Config.Bind("장비 운","2단계 승급 시작 Luck",2000,"이 Luck 이상부터 첫 승급에 성공했을 때 두 번째 승급을 추가로 판정합니다. 0이면 2단계 승급을 사용하지 않습니다.");
         FlavorLog=Plugin.I.Config.Bind("장비 운","몬스터 장비 플레이버 로그",false,"몬스터 장비 희귀도가 실제로 상승했을 때 게임 플레이 로그에 메시지를 표시합니다. 몬스터 생성이 잦으면 로그가 많아질 수 있어 기본값은 꺼짐입니다.");
-        target=AccessTools.Method(typeof(Chara),"SetEQQuality");
+        target=typeof(Chara).GetMethod("SetEQQuality",BindingFlags.Instance|BindingFlags.NonPublic);
         if(target==null)
         {
             Plugin.I.Logger.LogWarning("[Luck] 몬스터 장비 운: Chara.SetEQQuality를 찾지 못해 비활성화합니다.");
@@ -50,8 +50,7 @@ static class MonsterEquipLuckPatch
             var bp=CardBlueprint.current;
             if(bp==null||bp!=CardBlueprint.CharaGenEQ)return;
             var old=bp.rarity;
-            if(old==Rarity.Artifact||old==Rarity.Mythical)return;
-            if(old==Rarity.Random)return;
+            if(old==Rarity.Artifact||old==Rarity.Mythical||old==Rarity.Random)return;
             int chance=Math.Min(Math.Max(0,LuckCap?.Value??35),Math.Max(0,Plugin.Luck()/Math.Max(1,LuckDiv?.Value??40)));
             if(chance<=0||EClass.rnd(100)>=chance)return;
             var now=Upgrade(old);

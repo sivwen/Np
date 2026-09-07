@@ -1,22 +1,65 @@
 name: tmp-elin-luck-v320-build
 on:
   push:
-    branches: ["tmp-elin-elona-luck-v320-20260905"]
+    branches: ["tmp-elin-elona-luck-v320-20260907"]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
-        with: {dotnet-version: '8.0.x'}
-      - run: dotnet build _tmp/ElonaLuckForElinV3/ElonaLuckForElinV3.csproj -c Release
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply v3.20 transform
+        run: python _tmp/build_v320.py
+      - name: Safety and metadata source audit
+        run: |
+          set -eu
+          P=_tmp/ElonaLuckForElinV3/Plugin.cs
+          C=_tmp/ElonaLuckForElinV3/refs/BepInExCore/BepInExCore.csproj
+          U=_tmp/ElonaLuckForElinV3/refs/BepInExUnity/BepInExUnity.csproj
+          ! grep -q 'HarmonyPatch(typeof(Card),nameof(Card.Die)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(Card),nameof(Card.SpawnLoot)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(Thing),nameof(Thing.OnCreate)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(ThingGen)' "$P"
+          ! grep -q 'HarmonyPatch(typeof(Card),nameof(Card.DamageHP)' "$P"
+          ! grep -q 'StackTrace' "$P"
+          ! grep -q '\.PatchAll()' "$P"
+          grep -q '<AssemblyVersion>6.0.0.0</AssemblyVersion>' "$C"
+          grep -q '<AssemblyVersion>6.0.0.0</AssemblyVersion>' "$U"
+          grep -q '<version>0.23.338</version>' _tmp/ElonaLuckForElinV3/package.xml
+      - name: Build
+        run: dotnet build _tmp/ElonaLuckForElinV3/ElonaLuckForElinV3.csproj -c Release
+      - name: Verify compiled assembly references
+        run: |
+          set -eu
+          mkdir -p /tmp/refcheck
+          cat >/tmp/refcheck/refcheck.csproj <<'EOF'
+          <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>
+          EOF
+          cat >/tmp/refcheck/Program.cs <<'EOF'
+          using System;
+          using System.IO;
+          using System.Linq;
+          using System.Runtime.Loader;
+          var path=Path.GetFullPath(args[0]);
+          var asm=AssemblyLoadContext.Default.LoadFromAssemblyPath(path);
+          var refs=asm.GetReferencedAssemblies();
+          foreach(var r in refs.OrderBy(x=>x.Name)) Console.WriteLine($"{r.Name} {r.Version}");
+          bool core=refs.Any(r=>r.Name=="BepInEx.Core" && r.Version==new Version(6,0,0,0));
+          bool unity=refs.Any(r=>r.Name=="BepInEx.Unity" && r.Version==new Version(6,0,0,0));
+          if(!core || !unity) Environment.Exit(2);
+          EOF
+          dotnet run --project /tmp/refcheck/refcheck.csproj -- _tmp/ElonaLuckForElinV3/bin/Release/netstandard2.0/ElonaLuckForElin.dll
       - name: Package
         run: |
           mkdir -p artifact/ElonaLuckForElin
           cp _tmp/ElonaLuckForElinV3/bin/Release/netstandard2.0/ElonaLuckForElin.dll artifact/ElonaLuckForElin/
           cp _tmp/ElonaLuckForElinV3/package.xml artifact/ElonaLuckForElin/
           cp _tmp/ElonaLuckForElinV3/README_KR.md artifact/ElonaLuckForElin/
+          test ! -e artifact/ElonaLuckForElin/BepInEx.Core.dll
+          test ! -e artifact/ElonaLuckForElin/BepInEx.Unity.dll
       - uses: actions/upload-artifact@v4
         with:
-          name: ElonaLuckForElin-v3.2
+          name: ElonaLuckForElin-v3.20-BepInExReferenceFix
           path: artifact/ElonaLuckForElin
